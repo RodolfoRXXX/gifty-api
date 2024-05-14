@@ -16,7 +16,7 @@ const save_image = require('../functions/saveImage');
 
 /* ----------------------- POST --------------------------*/
 
-//Desbloquea la cuenta del usuario cundo se ingresa el código de activación asignado a dicha cuenta
+// Desbloquea la cuenta del usuario cundo se ingresa el código de activación asignado a dicha cuenta
 router.post('/verificate-user', auth.verifyToken, async function(req, res, next){
     try{
         let {email, activation_code} = req.body;
@@ -47,7 +47,7 @@ router.post('/verificate-user', auth.verifyToken, async function(req, res, next)
     connection.con.end;
 });
 
-//Verifica la contraseña del usuario
+// Verifica la contraseña del usuario
 router.post('/verificate-password', auth.verifyToken, async function(req, res, next){
     try{
         let {id, password} = req.body;
@@ -72,7 +72,7 @@ router.post('/verificate-password', auth.verifyToken, async function(req, res, n
     connection.con.end;
 });
 
-//Actualiza el nombre de usuario
+// Actualiza el nombre de usuario
 router.post('/update-username', auth.verifyToken, async function(req, res, next){
     try {
         let {id, name} = req.body;
@@ -103,7 +103,7 @@ router.post('/update-username', auth.verifyToken, async function(req, res, next)
     connection.con.end;
 });
 
-//Actualiza la contraseña del usuario
+// Actualiza la contraseña del usuario
 router.post('/update-password', auth.verifyToken, async function(req, res, next){
     try {
         let {id, password} = req.body;
@@ -123,7 +123,7 @@ router.post('/update-password', auth.verifyToken, async function(req, res, next)
     connection.con.end;
 });
 
-//Actualiza el correo electrónico del usuario
+// Actualiza el correo electrónico del usuario
 router.post('/update-email', auth.verifyToken, async function(req, res, next){
     try {
         let {id, email, activation_code, state} = req.body;
@@ -142,7 +142,7 @@ router.post('/update-email', auth.verifyToken, async function(req, res, next){
     connection.con.end;
 });
 
-//Carga una nueva imagen de usuario
+// Carga una nueva imagen de usuario
 router.post('/load-user-image', auth.verifyToken, async (req, res, next) => {
     try {
         let {id, thumbnail, blanck} = req.body;
@@ -189,7 +189,7 @@ router.post('/load-user-image', auth.verifyToken, async (req, res, next) => {
     connection.con.end;
 });
 
-//Carga un nuevo logo para la empresa
+// Carga un nuevo logo para la empresa
 router.post('/load-logo-image', auth.verifyToken, async (req, res, next) => {
     try {
         let {id, thumbnail, blanck} = req.body;
@@ -228,7 +228,7 @@ router.post('/load-logo-image', auth.verifyToken, async (req, res, next) => {
     connection.con.end;
 });
 
-//Actualiza los valores de la empresa
+// Actualiza los valores de la empresa
 router.post('/update-enterprise', auth.verifyToken, async function(req, res, next){
     try {
         let {id, name, cuit, address, cp, phone_1, phone_2, city, state, country } = req.body;
@@ -247,7 +247,7 @@ router.post('/update-enterprise', auth.verifyToken, async function(req, res, nex
     connection.con.end;
 });
 
-//Actualiza los valores de un empleado (personal)
+// Actualiza los valores de un empleado (personal)
 router.post('/update-employee-personal', auth.verifyToken, async function(req, res, next){
     try {
         let {id_user, name, email, address, date, phone, mobile } = req.body;
@@ -277,7 +277,7 @@ router.post('/update-employee-personal', auth.verifyToken, async function(req, r
     connection.con.end;
 });
 
-//Actualiza los valores de un empleado (laboral)
+// Actualiza los valores de un empleado (laboral)
 router.post('/update-employee-work', auth.verifyToken, async function(req, res, next){
     try {
         let { id_user, name_er, phone_er } = req.body.data;
@@ -318,7 +318,7 @@ router.post('/update-employee-work', auth.verifyToken, async function(req, res, 
 
 /* ----------------------- GET --------------------------*/
 
-//Devuelve una empresa del listado
+// Devuelve una empresa del listado
 router.post('/get-enterprise', auth.verifyToken, async function(req, res, next){
     try{
         let {id} = req.body;
@@ -341,7 +341,7 @@ router.post('/get-enterprise', auth.verifyToken, async function(req, res, next){
     connection.con.end;
 });
 
-//Devuelve una lista de usuarios de una empresa en particular
+// Devuelve una lista de usuarios de una empresa en particular
 router.post('/get-employees', auth.verifyToken, async function(req, res, next){
     try{
         let {id_enterprise} = req.body;
@@ -364,7 +364,7 @@ router.post('/get-employees', auth.verifyToken, async function(req, res, next){
     connection.con.end;
 });
 
-//Devuelve un empleado del listado
+// Devuelve un empleado del listado
 router.post('/get-employee', auth.verifyToken, async function(req, res, next){
     try{
         let {id_user} = req.body;
@@ -389,7 +389,7 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
     connection.con.end;
 });
 
-//Devuelve el número total de facturas por id para paginador
+// Devuelve el número total de facturas por id para paginador
 router.post('/get-count-bills', auth.verifyToken, async function(req, res, next){
     try{
         let {id} = req.body;
@@ -412,7 +412,7 @@ router.post('/get-count-bills', auth.verifyToken, async function(req, res, next)
     connection.con.end;
 });
 
-//Devuelve una lista de facturas de la empresa en cuestión
+// Devuelve una lista de facturas de la empresa en cuestión
 router.post('/get-bills', auth.verifyToken, async function(req, res, next){
     try{
         let {id, page, size} = req.body;
@@ -435,7 +435,7 @@ router.post('/get-bills', auth.verifyToken, async function(req, res, next){
     connection.con.end;
 });
 
-//Devuelve el número total de fusuarios por id para paginador
+// Devuelve el número total de usuarios por id para paginador
 router.post('/get-count-users', auth.verifyToken, async function(req, res, next){
     try{
         let {id} = req.body;
@@ -458,18 +458,40 @@ router.post('/get-count-users', auth.verifyToken, async function(req, res, next)
     connection.con.end;
 });
 
-//Devuelve una lista de usuarios de la empresa en cuestión
-router.post('/get-users', auth.verifyToken, async function(req, res, next){
+// Devuelve los roles de cada empresa
+router.post('/get-enterprise-roles', auth.verifyToken, async function(req, res, next){
+    try {
+        let {id_enterprise} = req.body;
+        const _sql = `SELECT * FROM role WHERE id_enterprise = ?`;
+        connection.con.query(_sql, id_enterprise, (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                if(result.length){
+                    res.send({status: 1, data: result});
+                } else{
+                    res.send({status: 1, data: ''});
+                }
+            }
+        });
+    } catch (error) {
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
+
+// Devuelve una lista de usuarios de la empresa en cuestión
+router.post('/get-enterprise-users', auth.verifyToken, async function(req, res, next){
     try{
-        let {id, page, size} = req.body;
+        let {id_enterprise} = req.body;
         const sql = `SELECT u.email, u.thumbnail, u.state AS verified_state,
                     (SELECT e.id FROM employee AS e WHERE e.id_user = u.id) AS id_employee, 
                     (SELECT e.name FROM employee AS e WHERE e.id_user = u.id) AS name_employee, 
                     (SELECT r.name_role FROM employee AS e INNER JOIN role AS r ON e.role = r.id WHERE e.id_user = u.id) AS role, 
                     (SELECT e.state FROM employee AS e WHERE e.id_user = u.id) AS state_employee 
                     FROM users AS u 
-                    WHERE u.id_enterprise = ? LIMIT ? OFFSET ?`;
-        connection.con.query(sql, [id, size, size*page], (err, result, fields) => {
+                    WHERE u.id_enterprise = ?`;
+        connection.con.query(sql, id_enterprise, (err, result, fields) => {
             if (err) {
                 res.send({status: 0, data: err});
             } else {

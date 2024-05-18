@@ -315,6 +315,25 @@ router.post('/update-employee-work', auth.verifyToken, async function(req, res, 
     connection.con.end;
 });
 
+// Actualiza los permisos de un rol
+router.post('/update-role-permissions', auth.verifyToken, async function(req, res, next){
+    try {
+        let {id, icon_role, name_role, list_of_permissions} = req.body;
+
+        const _sql = `UPDATE role SET name_role= ?, icon_role= ?, list_of_permissions= ? WHERE id = ?`;
+        connection.con.query(_sql, [name_role, icon_role, list_of_permissions, id], (err, result, field) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                res.send({status: 1, data: result})
+            }
+        })
+    } catch (error) {
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
+
 
 /* ----------------------- GET --------------------------*/
 
@@ -500,6 +519,88 @@ router.post('/get-enterprise-users', auth.verifyToken, async function(req, res, 
                 } else{
                     res.send({status: 1, data: ''});
                 }
+            }
+        });
+    } catch(error){
+        //error de conexión
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
+
+//Devuelve el listado de permisos de la tabla permissions
+router.get('/get-permissions', async function(req, res, next){
+    try{
+        const _sql = `SELECT * FROM permissions`;
+        connection.con.query(_sql, (err, result, fields) => {
+            if(err){
+                res.send({status: 0, data: err});
+            } else{
+                if(result.length){
+                    res.send({status: 1, data: result});
+                } else{
+                    res.send({status: 1, data: ''});
+                }
+            }
+        });
+    } catch(error){
+        //error de conexión
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
+
+// Devuelve los permisos de un rol en particular, utilizando el id de ese rol de esa empresa
+router.post('/get-role-permissions', auth.verifyToken, async function(req, res, next){
+    try {
+        let {id_role} = req.body;
+        const _sql = `SELECT * FROM role WHERE id = ?`;
+        connection.con.query(_sql, id_role, (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                if(result.length){
+                    res.send({status: 1, data: result});
+                } else{
+                    res.send({status: 1, data: ''});
+                }
+            }
+        });
+    } catch (error) {
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
+
+// Crear un nuevo rol para una empresa
+router.post('/create-new-role', auth.verifyToken, async function(req, res, next){
+    try{
+        let {id_enterprise, name_role, icon_role} = req.body;
+        const sql = `INSERT INTO role(id_enterprise, name_role, icon_role) VALUES (?, ?, ?)`;
+        connection.con.query(sql, [id_enterprise, name_role, icon_role], (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                res.send({status: 1, data: result});
+            }
+        });
+    } catch(error){
+        //error de conexión
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
+
+// Elimina un rol de una empresa
+router.post('/delete-role', auth.verifyToken, async function(req, res, next){
+    try{
+        let {id} = req.body;
+        const sql = `DELETE FROM role WHERE id = ?`;
+        connection.con.query(sql, id, (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                res.send({status: 1, data: result});
             }
         });
     } catch(error){

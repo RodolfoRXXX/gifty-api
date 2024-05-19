@@ -21,6 +21,7 @@ router.post('/register', async function(req, res, next){
         let {name, email, password, thumbnail, id_enterprise, activation_code, state} = req.body;
 
         let name_enterprise;
+        let enterprise_thumbnail;
         const sql_e = `SELECT * FROM enterprise WHERE id = ?;`
         connection.con.query(sql_e, id_enterprise, (err, result, fields) => {
             if (err) {
@@ -28,7 +29,8 @@ router.post('/register', async function(req, res, next){
                 res.send({status: 0, data: err});
             } else {
                 //Empresa encontrada y guardada en una variable temporal
-                name_enterprise = result[0].name
+                name_enterprise = result[0].name;
+                enterprise_thumbnail = result[0].thumbnail;
             }
         })
 
@@ -43,7 +45,7 @@ router.post('/register', async function(req, res, next){
                         //error de conexion o para agregar el usuario
                         res.send({status: 0, data: err});
                     } else {
-                        let user = [{id: result.insertId, name: name, email: email, password: hashed_password, thumbnail: thumbnail, id_enterprise: id_enterprise, enterprise: name_enterprise, activation_code: activation_code, state: state}]
+                        let user = [{id: result.insertId, name: name, email: email, password: hashed_password, thumbnail: thumbnail, id_enterprise: id_enterprise, enterprise: name_enterprise, enterprise_thumbnail: enterprise_thumbnail, activation_code: activation_code, state: state}]
                         //éxito al agregar el usuario
                         let token = jwt.sign({data: user}, keys.key);
                         res.send({status: 1, data: user, token: token});
@@ -66,7 +68,7 @@ router.post('/login', async function(req, res, next){
     try {
         let {email, password} = req.body;
         const hashed_password = md5(password.toString())
-        const sql = `SELECT u.id, u.name, u.email, u.password, u.thumbnail, u.id_enterprise, e.name AS enterprise, u.activation_code, u.state 
+        const sql = `SELECT u.id, u.name, u.email, u.password, u.thumbnail, u.id_enterprise, e.name AS enterprise, e.thumbnail AS enterprise_thumbnail, u.activation_code, u.state 
                     FROM users AS u INNER JOIN enterprise AS e ON u.id_enterprise = e.id 
                     WHERE u.email = ? AND u.password = ?`
         connection.con.query(sql, [email, hashed_password], (err, result, field) => {
@@ -91,7 +93,7 @@ router.post('/login', async function(req, res, next){
 router.post('/recharge', async function(req, res, next){
     try {
         let {email, password} = req.body;
-        const sql = `SELECT u.id, u.name, u.email, u.password, u.thumbnail, u.id_enterprise, e.name AS enterprise, u.activation_code, u.state 
+        const sql = `SELECT u.id, u.name, u.email, u.password, u.thumbnail, u.id_enterprise, e.name AS enterprise, e.thumbnail AS enterprise_thumbnail, u.activation_code, u.state 
                     FROM users AS u INNER JOIN enterprise AS e ON u.id_enterprise = e.id 
                     WHERE u.email = ? AND u.password = ?`
         connection.con.query(sql, [email, password], (err, result, field) => {

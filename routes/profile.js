@@ -408,207 +408,326 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
     connection.con.end;
 });
 
-// Devuelve el número total de facturas por id para paginador
-router.post('/get-count-bills', auth.verifyToken, async function(req, res, next){
-    try{
-        let {id} = req.body;
-        const sql = `SELECT COUNT(*) as total FROM bills WHERE id_enterprise = ?`;
-        connection.con.query(sql, id, (err, result, fields) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                if(result.length){
-                    res.send({status: 1, data: result});
-                } else{
-                    res.send({status: 1, data: ''});
-                }
-            }
-        });
-    } catch(error){
-        //error de conexión
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
 
-// Devuelve una lista de facturas de la empresa en cuestión
-router.post('/get-bills', auth.verifyToken, async function(req, res, next){
-    try{
-        let {id, page, size} = req.body;
-        const sql = `SELECT * FROM bills WHERE id_enterprise = ? LIMIT ? OFFSET ?`;
-        connection.con.query(sql, [id, size, size*page], (err, result, fields) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                if(result.length){
-                    res.send({status: 1, data: result});
-                } else{
-                    res.send({status: 1, data: ''});
-                }
-            }
-        });
-    } catch(error){
-        //error de conexión
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
+    // Facturación
 
-// Devuelve el número total de usuarios por id para paginador
-router.post('/get-count-users', auth.verifyToken, async function(req, res, next){
-    try{
-        let {id} = req.body;
-        const sql = `SELECT COUNT(*) as total FROM users WHERE id_enterprise = ?`;
-        connection.con.query(sql, id, (err, result, fields) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                if(result.length){
-                    res.send({status: 1, data: result});
-                } else{
-                    res.send({status: 1, data: ''});
-                }
+        // Devuelve el número total de facturas por id para paginador
+        router.post('/get-count-bills', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id} = req.body;
+                const sql = `SELECT COUNT(*) as total FROM bills WHERE id_enterprise = ?`;
+                connection.con.query(sql, id, (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
             }
+            connection.con.end;
         });
-    } catch(error){
-        //error de conexión
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
 
-// Devuelve los roles de cada empresa
-router.post('/get-enterprise-roles', auth.verifyToken, async function(req, res, next){
-    try {
-        let {id_enterprise} = req.body;
-        const _sql = `SELECT * FROM role WHERE id_enterprise = ?`;
-        connection.con.query(_sql, id_enterprise, (err, result, fields) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                if(result.length){
-                    res.send({status: 1, data: result});
-                } else{
-                    res.send({status: 1, data: ''});
-                }
+        // Devuelve una lista de facturas de la empresa en cuestión
+        router.post('/get-bills', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id, page, size} = req.body;
+                const sql = `SELECT * FROM bills WHERE id_enterprise = ? LIMIT ? OFFSET ?`;
+                connection.con.query(sql, [id, size, size*page], (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
             }
+            connection.con.end;
         });
-    } catch (error) {
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
 
-// Devuelve una lista de usuarios de la empresa en cuestión
-router.post('/get-enterprise-users', auth.verifyToken, async function(req, res, next){
-    try{
-        let {id_enterprise} = req.body;
-        const sql = `SELECT u.email, u.thumbnail, u.state AS verified_state,
-                    (SELECT e.id FROM employee AS e WHERE e.id_user = u.id) AS id_employee, 
-                    (SELECT e.name FROM employee AS e WHERE e.id_user = u.id) AS name_employee, 
-                    (SELECT r.name_role FROM employee AS e INNER JOIN role AS r ON e.role = r.id WHERE e.id_user = u.id) AS role, 
-                    (SELECT e.state FROM employee AS e WHERE e.id_user = u.id) AS state_employee 
-                    FROM users AS u 
-                    WHERE u.id_enterprise = ?`;
-        connection.con.query(sql, id_enterprise, (err, result, fields) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                if(result.length){
-                    res.send({status: 1, data: result});
-                } else{
-                    res.send({status: 1, data: ''});
-                }
+    // -----------------------------------
+
+
+    // Productos
+
+        // Devuelve el número total de productos por id_enterprise para paginador
+        router.post('/get-count-products', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id_enterprise} = req.body;
+                const sql = `SELECT COUNT(*) as total FROM product WHERE id_enterprise = ?`;
+                connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
             }
+            connection.con.end;
         });
-    } catch(error){
-        //error de conexión
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
 
-//Devuelve el listado de permisos de la tabla permissions
-router.get('/get-permissions', async function(req, res, next){
-    try{
-        const _sql = `SELECT * FROM permissions`;
-        connection.con.query(_sql, (err, result, fields) => {
-            if(err){
-                res.send({status: 0, data: err});
-            } else{
-                if(result.length){
-                    res.send({status: 1, data: result});
-                } else{
-                    res.send({status: 1, data: ''});
-                }
+        // Devuelve una lista de productos de l empresa(id_enterprise)
+        router.post('/get-products', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id_enterprise, page, size} = req.body;
+                const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color 
+                            FROM product AS p INNER JOIN categories AS c ON p.category = c.id 
+                            WHERE p.id_enterprise = ?
+                            LIMIT ? 
+                            OFFSET ?`;
+                connection.con.query(sql, [id_enterprise, size, size*page], (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
             }
+            connection.con.end;
         });
-    } catch(error){
-        //error de conexión
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
 
-// Devuelve los permisos de un rol en particular, utilizando el id de ese rol de esa empresa
-router.post('/get-role-permissions', auth.verifyToken, async function(req, res, next){
-    try {
-        let {id_role} = req.body;
-        const _sql = `SELECT * FROM role WHERE id = ?`;
-        connection.con.query(_sql, id_role, (err, result, fields) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                if(result.length){
-                    res.send({status: 1, data: result});
-                } else{
-                    res.send({status: 1, data: ''});
-                }
+        // Devuelve datos específicos de la tabla productos
+        router.post('/get-products-data', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id_enterprise, date_limit} = req.body;
+                const sql = `SELECT *
+                            FROM (
+                                SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                UNION
+                                SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                UNION
+                                SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.is_stock = 'sin stock' AND p.id_enterprise = ?
+                                UNION
+                                SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.is_stock = 'con stock' AND p.id_enterprise = ?
+                            ) AS results`;
+                connection.con.query(sql, [id_enterprise, id_enterprise, date_limit, id_enterprise, date_limit, id_enterprise], (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
             }
+            connection.con.end;
         });
-    } catch (error) {
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
 
-// Crear un nuevo rol para una empresa
-router.post('/create-new-role', auth.verifyToken, async function(req, res, next){
-    try{
-        let {id_enterprise, name_role, icon_role} = req.body;
-        const sql = `INSERT INTO role(id_enterprise, name_role, icon_role) VALUES (?, ?, ?)`;
-        connection.con.query(sql, [id_enterprise, name_role, icon_role], (err, result, fields) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                res.send({status: 1, data: result});
+        // Devuelve el listado de las categorías
+        router.post('/get-categories', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id_enterprise} = req.body;
+                const sql = `SELECT * FROM categories WHERE id_enterprise = ?`;
+                connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
             }
+            connection.con.end;
         });
-    } catch(error){
-        //error de conexión
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
 
-// Elimina un rol de una empresa
-router.post('/delete-role', auth.verifyToken, async function(req, res, next){
-    try{
-        let {id} = req.body;
-        const sql = `DELETE FROM role WHERE id = ?`;
-        connection.con.query(sql, id, (err, result, fields) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                res.send({status: 1, data: result});
+    // -----------------------------------
+
+
+    // Roles
+
+        // Devuelve el número total de usuarios por id para paginador
+        router.post('/get-count-users', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id} = req.body;
+                const sql = `SELECT COUNT(*) as total FROM users WHERE id_enterprise = ?`;
+                connection.con.query(sql, id, (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
             }
+            connection.con.end;
         });
-    } catch(error){
-        //error de conexión
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
 
+        // Devuelve los roles de cada empresa
+        router.post('/get-enterprise-roles', auth.verifyToken, async function(req, res, next){
+            try {
+                let {id_enterprise} = req.body;
+                const _sql = `SELECT * FROM role WHERE id_enterprise = ?`;
+                connection.con.query(_sql, id_enterprise, (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch (error) {
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
+        // Devuelve una lista de usuarios de la empresa en cuestión
+        router.post('/get-enterprise-users', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id_enterprise} = req.body;
+                const sql = `SELECT u.email, u.thumbnail, u.state AS verified_state,
+                            (SELECT e.id FROM employee AS e WHERE e.id_user = u.id) AS id_employee, 
+                            (SELECT e.name FROM employee AS e WHERE e.id_user = u.id) AS name_employee, 
+                            (SELECT r.name_role FROM employee AS e INNER JOIN role AS r ON e.role = r.id WHERE e.id_user = u.id) AS role, 
+                            (SELECT e.state FROM employee AS e WHERE e.id_user = u.id) AS state_employee 
+                            FROM users AS u 
+                            WHERE u.id_enterprise = ?`;
+                connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
+        //Devuelve el listado de permisos de la tabla permissions
+        router.get('/get-permissions', async function(req, res, next){
+            try{
+                const _sql = `SELECT * FROM permissions`;
+                connection.con.query(_sql, (err, result, fields) => {
+                    if(err){
+                        res.send({status: 0, data: err});
+                    } else{
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
+        // Devuelve los permisos de un rol en particular, utilizando el id de ese rol de esa empresa
+        router.post('/get-role-permissions', auth.verifyToken, async function(req, res, next){
+            try {
+                let {id_role} = req.body;
+                const _sql = `SELECT * FROM role WHERE id = ?`;
+                connection.con.query(_sql, id_role, (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch (error) {
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
+        // Crear un nuevo rol para una empresa
+        router.post('/create-new-role', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id_enterprise, name_role, icon_role} = req.body;
+                const sql = `INSERT INTO role(id_enterprise, name_role, icon_role) VALUES (?, ?, ?)`;
+                connection.con.query(sql, [id_enterprise, name_role, icon_role], (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        res.send({status: 1, data: result});
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
+        // Elimina un rol de una empresa
+        router.post('/delete-role', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id} = req.body;
+                const sql = `DELETE FROM role WHERE id = ?`;
+                connection.con.query(sql, id, (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        res.send({status: 1, data: result});
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
+    // -----------------------------------
 
 module.exports = router;

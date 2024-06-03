@@ -485,7 +485,7 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
             connection.con.end;
         });
 
-        // Devuelve una lista de productos de l empresa(id_enterprise)
+        // Devuelve una lista de productos de la empresa(id_enterprise)
         router.post('/get-products', auth.verifyToken, async function(req, res, next){
             try{
                 let {id_enterprise, page, size} = req.body;
@@ -495,6 +495,29 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
                             LIMIT ? 
                             OFFSET ?`;
                 connection.con.query(sql, [id_enterprise, size, size*page], (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
+        // Devuelve un producto por ID
+        router.post('/get-product-detail', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id_product} = req.body;
+                const sql = `SELECT * FROM product AS p WHERE p.id = ?`;
+                connection.con.query(sql, id_product, (err, result, fields) => {
                     if (err) {
                         res.send({status: 0, data: err});
                     } else {

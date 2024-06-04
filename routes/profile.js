@@ -516,9 +516,13 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
         router.post('/get-product-detail', auth.verifyToken, async function(req, res, next){
             try{
                 let {id_product} = req.body;
-                const sql = `SELECT * FROM product AS p WHERE p.id = ?`;
+                const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color , s.name AS storage_name, prov.name AS provider_name 
+                            FROM product AS p INNER JOIN categories AS c ON p.category = c.id 
+                            INNER JOIN storage AS s ON p.storage_location = s.id 
+                            INNER JOIN provider AS prov ON p.provider = prov.id 
+                            WHERE p.id = ?`;
                 connection.con.query(sql, id_product, (err, result, fields) => {
-                    if (err) {
+                    if (err) {lo
                         res.send({status: 0, data: err});
                     } else {
                         if(result.length){

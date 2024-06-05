@@ -462,6 +462,61 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
 
     // Productos
 
+        // Devuelve datos específicos de la tabla productos
+        router.post('/get-products-data', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id_enterprise, date_limit} = req.body;
+                const sql = `SELECT *
+                            FROM (
+                                SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                UNION
+                                SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                UNION
+                                SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.is_stock = 'sin stock' AND p.id_enterprise = ?
+                                UNION
+                                SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.is_stock = 'con stock' AND p.id_enterprise = ?
+                            ) AS results`;
+                connection.con.query(sql, [id_enterprise, id_enterprise, date_limit, id_enterprise, date_limit, id_enterprise], (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
+        // Devuelve el listado de las categorías
+        router.post('/get-categories', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id_enterprise} = req.body;
+                const sql = `SELECT * FROM categories WHERE id_enterprise = ?`;
+                connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
         // Devuelve el número total de productos por id_enterprise para paginador
         router.post('/get-count-products', auth.verifyToken, async function(req, res, next){
             try{
@@ -515,13 +570,13 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
         // Devuelve un producto por ID
         router.post('/get-product-detail', auth.verifyToken, async function(req, res, next){
             try{
-                let {id_product} = req.body;
+                let {id_enterprise, name, id_option_1, id_option_2} = req.body;
                 const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color , s.name AS storage_name, prov.name AS provider_name 
                             FROM product AS p INNER JOIN categories AS c ON p.category = c.id 
                             INNER JOIN storage AS s ON p.storage_location = s.id 
                             INNER JOIN provider AS prov ON p.provider = prov.id 
-                            WHERE p.id = ?`;
-                connection.con.query(sql, id_product, (err, result, fields) => {
+                            WHERE p.id_enterprise = ? AND p.name = ? AND p.id_option_1 = ? AND p.id_option_2 = ?`;
+                connection.con.query(sql, [id_enterprise, name, id_option_1, id_option_2], (err, result, fields) => {
                     if (err) {
                         res.send({status: 0, data: err});
                     } else {
@@ -539,21 +594,17 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
             connection.con.end;
         });
 
-        // Devuelve datos específicos de la tabla productos
-        router.post('/get-products-data', auth.verifyToken, async function(req, res, next){
+        // Devuelve la cantidad de un mismo producto pero para diferentes valores del campo "id_option_1"
+        router.post('/get-product-detail-option1', auth.verifyToken, async function(req, res, next){
             try{
-                let {id_enterprise, date_limit} = req.body;
-                const sql = `SELECT *
-                            FROM (
-                                SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
-                                UNION
-                                SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
-                                UNION
-                                SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.is_stock = 'sin stock' AND p.id_enterprise = ?
-                                UNION
-                                SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.is_stock = 'con stock' AND p.id_enterprise = ?
-                            ) AS results`;
-                connection.con.query(sql, [id_enterprise, id_enterprise, date_limit, id_enterprise, date_limit, id_enterprise], (err, result, fields) => {
+                let {name, id_enterprise} = req.body;
+                const sql = `SELECT p.id_option_1 AS id_option, t1.name AS option, SUM(p.stock_real) AS stock 
+                            FROM product AS p 
+                            INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id 
+                            WHERE p.name = ? AND p.id_enterprise = ? 
+                            GROUP BY p.id_option_1 
+                            HAVING COUNT(DISTINCT p.id_option_1) > 0;`;
+                connection.con.query(sql, [name, id_enterprise], (err, result, fields) => {
                     if (err) {
                         res.send({status: 0, data: err});
                     } else {
@@ -571,12 +622,17 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
             connection.con.end;
         });
 
-        // Devuelve el listado de las categorías
-        router.post('/get-categories', auth.verifyToken, async function(req, res, next){
+        // Devuelve la cantidad de un mismo producto pero para diferentes valores del campo "id_option_2"
+        router.post('/get-product-detail-option2', auth.verifyToken, async function(req, res, next){
             try{
-                let {id_enterprise} = req.body;
-                const sql = `SELECT * FROM categories WHERE id_enterprise = ?`;
-                connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                let {name, id_enterprise} = req.body;
+                const sql = `SELECT p.id_option_2 AS id_option, t2.name AS option, SUM(p.stock_real) AS stock 
+                            FROM product AS p 
+                            INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
+                            WHERE p.name = ? AND p.id_enterprise = ? 
+                            GROUP BY p.id_option_2 
+                            HAVING COUNT(DISTINCT p.id_option_2) > 0;`;
+                connection.con.query(sql, [name, id_enterprise], (err, result, fields) => {
                     if (err) {
                         res.send({status: 0, data: err});
                     } else {

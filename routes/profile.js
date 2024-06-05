@@ -522,7 +522,7 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
                             INNER JOIN provider AS prov ON p.provider = prov.id 
                             WHERE p.id = ?`;
                 connection.con.query(sql, id_product, (err, result, fields) => {
-                    if (err) {lo
+                    if (err) {
                         res.send({status: 0, data: err});
                     } else {
                         if(result.length){

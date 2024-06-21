@@ -149,7 +149,7 @@ router.post('/load-user-image', auth.verifyToken, async (req, res, next) => {
         let changedRows;
 
         if(thumbnail.includes(';base64,')){
-            await save_image(id, 'user', thumbnail, blanck)
+            await save_image(id, 'user', 'thumbnail', thumbnail, 350, 350, blanck)
             .then( value => {
                 if(value == 'error') throw 'error';
                 else {
@@ -196,7 +196,7 @@ router.post('/load-logo-image', auth.verifyToken, async (req, res, next) => {
         let changedRows;
 
         if(thumbnail.includes(';base64,')){
-            await save_image(id, 'enterprise', thumbnail, blanck)
+            await save_image(id, 'enterprise', 'thumbnail', thumbnail, 350, 350, blanck)
             .then( value => {
                 if(value == 'error') throw 'error';
                 else {
@@ -564,10 +564,33 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
         });
 
         // Devuelve el listado de las ubicaciones
-        router.post('/get-locations', auth.verifyToken, async function(req, res, next){
+        router.post('/get-storages', auth.verifyToken, async function(req, res, next){
             try{
                 let {id_enterprise} = req.body;
                 const sql = `SELECT * FROM storage WHERE id_enterprise = ?`;
+                connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
+        // Devuelve el listado de las proveedores
+        router.post('/get-providers', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id_enterprise} = req.body;
+                const sql = `SELECT * FROM provider WHERE id_enterprise = ?`;
                 connection.con.query(sql, id_enterprise, (err, result, fields) => {
                     if (err) {
                         res.send({status: 0, data: err});
@@ -824,6 +847,125 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
                     const sql = `UPDATE product AS p 
                                 SET name=?,description=?,category=?,id_option_1=?,id_option_2=?,sku=? WHERE p.id = ?`;
                     connection.con.query(sql, [name, description, category, id_option_1, id_option_2, sku, id], (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Edita una imagen para un producto por ID
+            router.post('/edit-product-image', auth.verifyToken, async (req, res, next) => {
+                try {
+                    let {id, image, blanck} = req.body;
+                    let changedRows;
+
+                    if(image.includes(';base64,')){
+                        await save_image(id, 'product', 'picture', image, 600, 600, blanck)
+                        .then( value => {
+                            if(value == 'error') throw 'error';
+                            else {
+                                image = value;
+                            }
+                        } )
+                        .catch( error => {
+                            throw error;
+                        } )
+                    }
+
+                    if(blanck) {
+                        const sql = `UPDATE product SET image = ? WHERE id = ?`;
+                        connection.con.query(sql, [image, id], (err, result, field) => {
+                            if (err) {
+                                res.send({status: 0, data: err});
+                            } else {
+                                changedRows = result.changedRows
+                                res.send({status: 1, changedRows: changedRows});
+                            }
+                        })
+                    } else {
+                        changedRows = 1
+                        res.send({status: 1, changedRows: changedRows});
+                    }
+                } catch (error) {
+                    res.send({status: 0, data: error});
+                }
+                connection.con.end;
+            });
+
+            //Edita un producto, pero los campos de proveedor, fehca de compra y precio de compra
+            router.post('/edit-product-provider', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id, provider, purchase_date, purchase_price} = req.body;
+
+                    const sql = `UPDATE product AS p 
+                                SET provider=?, purchase_date=?, purchase_price=? WHERE p.id = ?`;
+                    connection.con.query(sql, [provider, purchase_date, purchase_price, id], (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Edita un producto, pero los campos de stock_real, stock_available y is_stock
+            router.post('/edit-product-stock', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id, stock_real, is_stock, stock_available} = req.body;
+
+                    const sql = `UPDATE product AS p 
+                                SET stock_real=?, is_stock=?, stock_available=? WHERE p.id = ?`;
+                    connection.con.query(sql, [stock_real, is_stock, stock_available, id], (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Edita un producto, pero el campo de sale_price
+            router.post('/edit-product-price', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id, sale_price, purchase_price} = req.body;
+
+                    const sql = `UPDATE product AS p 
+                                SET sale_price=? WHERE p.id = ?`;
+                    connection.con.query(sql, [sale_price, id], (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Edita un producto, pero el campo de storage_location
+            router.post('/edit-product-storage', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id, storage_location} = req.body;
+
+                    const sql = `UPDATE product AS p 
+                                SET storage_location=? WHERE p.id = ?`;
+                    connection.con.query(sql, [storage_location, id], (err, result, field) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {

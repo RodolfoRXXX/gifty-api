@@ -978,6 +978,26 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
                 connection.con.end;
             });
 
+            //Activa o desactiva un producto
+            router.post('/edit-product-activation', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id, state} = req.body;
+
+                    const sql = `UPDATE product AS p 
+                                SET state=? WHERE p.id = ?`;
+                    connection.con.query(sql, [state, id], (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
     // -----------------------------------
 
 

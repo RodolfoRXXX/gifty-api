@@ -590,6 +590,27 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
                 connection.con.end;
             });
 
+            // Edita una categoría
+            router.post('/edit-category', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id, id_enterprise, name, color_badge, color} = req.body;
+                    const sql = `UPDATE categories AS c
+                                SET name=?,color_badge=?
+                                WHERE c.id = ?`;
+                    connection.con.query(sql, [name, color_badge, id], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
         // Devuelve el listado de las opciones 1 (Color)
         router.post('/get-option1', auth.verifyToken, async function(req, res, next){
             try{

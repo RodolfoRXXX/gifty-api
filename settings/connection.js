@@ -3,8 +3,15 @@ const mysql   = require('mysql');
 module.exports = {
 
 //datos de conexión en local
-
+/*
     con : mysql.createConnection({
+        host: "localhost",
+        user:"root",
+        password:"",
+        database:"api_bamboo"
+    })
+*/
+    con : mysql.createPool({
         host: "localhost",
         user:"root",
         password:"",

@@ -494,28 +494,101 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
             connection.con.end;
         });
 
-        // Devuelve el listado de las categorías
-        router.post('/get-categories', auth.verifyToken, async function(req, res, next){
-            try{
-                let {id_enterprise} = req.body;
-                const sql = `SELECT * FROM categories WHERE id_enterprise = ?`;
-                connection.con.query(sql, id_enterprise, (err, result, fields) => {
-                    if (err) {
-                        res.send({status: 0, data: err});
-                    } else {
-                        if(result.length){
-                            res.send({status: 1, data: result});
-                        } else{
-                            res.send({status: 1, data: ''});
+        //Categorías
+            // Devuelve el listado de las categorías
+            router.post('/get-categories', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT * FROM categories WHERE id_enterprise = ?`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
                         }
-                    }
-                });
-            } catch(error){
-                //error de conexión
-                res.send({status: 0, error: error});
-            }
-            connection.con.end;
-        });
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve una categoría por ID
+            router.post('/get-category-id', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_category} = req.body;
+                    const sql = `SELECT * FROM categories WHERE id = ?`;
+                    connection.con.query(sql, id_category, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve el listado de las categorías con stock y precio del total de cada categoría
+            router.post('/get-categories-stock-price', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT c.*,
+                                COALESCE(SUM(p.stock_real), 0) AS total_stock_real,
+                                COALESCE(SUM(CASE WHEN p.stock_real > 0 THEN p.sale_price ELSE 0 END), 0) AS total_sale_price 
+                                FROM categories AS c 
+                                LEFT JOIN product AS p ON c.id = p.category 
+                                WHERE c.id_enterprise = ? 
+                                GROUP BY c.id
+                                ORDER BY c.name`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Crea una categoría nueva
+            router.post('/create-category', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id, id_enterprise, name, color_badge, color} = req.body;
+                    const sql = `INSERT INTO categories(id_enterprise, name, color_badge) VALUES (?, ?, ?)`;
+                    connection.con.query(sql, [id_enterprise, name, color_badge], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
 
         // Devuelve el listado de las opciones 1 (Color)
         router.post('/get-option1', auth.verifyToken, async function(req, res, next){
@@ -689,12 +762,41 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
         router.post('/get-product-detail', auth.verifyToken, async function(req, res, next){
             try{
                 let {id_enterprise, name, id_option_1, id_option_2} = req.body;
-                const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color , s.name AS storage_name, prov.name AS provider_name 
+                const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color , s.name AS storage_name, prov.name AS provider_name, t1.name AS option_1_name, t2.name AS option_2_name 
                             FROM product AS p INNER JOIN categories AS c ON p.category = c.id 
                             INNER JOIN storage AS s ON p.storage_location = s.id 
-                            INNER JOIN provider AS prov ON p.provider = prov.id 
+                            INNER JOIN provider AS prov ON p.provider = prov.id
+                            INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id 
+                            INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id  
                             WHERE p.id_enterprise = ? AND p.name = ? AND p.id_option_1 = ? AND p.id_option_2 = ?`;
                 connection.con.query(sql, [id_enterprise, name, id_option_1, id_option_2], (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch(error){
+                //error de conexión
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
+        // Devuelve las variantes de opciones del mismo producto
+        router.post('/get-product-variants', auth.verifyToken, async function(req, res, next){
+            try{
+                let {id_enterprise, name} = req.body;
+                const sql = `SELECT p.*,  t1.name AS option_1_name, t2.name AS option_2_name
+                            FROM product AS p 
+                            INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id 
+                            INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
+                            WHERE p.id_enterprise = ? AND p.name = ?`;
+                connection.con.query(sql, [id_enterprise, name], (err, result, fields) => {
                     if (err) {
                         res.send({status: 0, data: err});
                     } else {
@@ -739,7 +841,7 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
             connection.con.end;
         });
 
-        // Devuelve la cantidad de un mismo producto pero para diferentes valores del campo "id_option_1"
+        // Devuelve la cantidad de un mismo producto pero para diferentes valores del campo "id_option_1" (DEPRECATED en product-detail)
         router.post('/get-product-detail-option1', auth.verifyToken, async function(req, res, next){
             try{
                 let {name, id_enterprise} = req.body;
@@ -767,7 +869,7 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
             connection.con.end;
         });
 
-        // Devuelve la cantidad de un mismo producto pero para diferentes valores del campo "id_option_2"
+        // Devuelve la cantidad de un mismo producto pero para diferentes valores del campo "id_option_2" (DEPRECATED en product-detail)
         router.post('/get-product-detail-option2', auth.verifyToken, async function(req, res, next){
             try{
                 let {name, id_enterprise} = req.body;

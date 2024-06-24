@@ -575,12 +575,26 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
             router.post('/create-category', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id, id_enterprise, name, color_badge, color} = req.body;
-                    const sql = `INSERT INTO categories(id_enterprise, name, color_badge) VALUES (?, ?, ?)`;
-                    connection.con.query(sql, [id_enterprise, name, color_badge], (err, result, fields) => {
+                    const sql_e = `SELECT name FROM categories WHERE name = ?;`
+                    connection.con.query(sql_e, name, (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {
-                            res.send({status: 1, data: result})
+                            if (!result.length) {
+                                //éxito en no encontrar esta categoría
+                                const sql = `INSERT INTO categories(id_enterprise, name, color_badge) VALUES (?, ?, ?)`;
+                                connection.con.query(sql, [id_enterprise, name, color_badge], (err, response, fields) => {
+                                    if (err) {
+                                        //error de conexion o para crear la categoría
+                                        res.send({status: 0, data: err});
+                                    } else {
+                                        res.send({status: 1, data: response})
+                                    }
+                                })
+                            } else{
+                                //error porque existe usuario
+                                res.send({status: 1, data: 'existente'});
+                            }
                         }
                     });
                 } catch(error){

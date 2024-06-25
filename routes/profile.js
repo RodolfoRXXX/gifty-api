@@ -694,28 +694,52 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
             connection.con.end;
         });
 
-        // Devuelve el listado de las proveedores
-        router.post('/get-providers', auth.verifyToken, async function(req, res, next){
-            try{
-                let {id_enterprise} = req.body;
-                const sql = `SELECT * FROM provider WHERE id_enterprise = ?`;
-                connection.con.query(sql, id_enterprise, (err, result, fields) => {
-                    if (err) {
-                        res.send({status: 0, data: err});
-                    } else {
-                        if(result.length){
-                            res.send({status: 1, data: result});
-                        } else{
-                            res.send({status: 1, data: ''});
+        //Providers
+            // Devuelve el número total de facturas por id para paginador
+            router.post('/get-count-providers', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT COUNT(*) as total FROM provider WHERE id_enterprise = ?`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
                         }
-                    }
-                });
-            } catch(error){
-                //error de conexión
-                res.send({status: 0, error: error});
-            }
-            connection.con.end;
-        });
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve el listado de las proveedores
+            router.post('/get-providers', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT * FROM provider WHERE id_enterprise = ?`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
 
         // Devuelve el número total de productos por id_enterprise para paginador
         router.post('/get-count-products', auth.verifyToken, async function(req, res, next){

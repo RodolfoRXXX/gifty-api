@@ -592,7 +592,7 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
                                     }
                                 })
                             } else{
-                                //error porque existe usuario
+                                //error porque existe la categoría
                                 res.send({status: 1, data: 'existente'});
                             }
                         }
@@ -732,6 +732,117 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
                             } else{
                                 res.send({status: 1, data: ''});
                             }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve datos específicos de la tabla prveedores(provider)
+            router.post('/get-provider-data', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, date_limit} = req.body;
+                    const sql = `SELECT *
+                                FROM (
+                                    SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                    UNION
+                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                    UNION
+                                    SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.is_stock = 'sin stock' AND p.id_enterprise = ?
+                                    UNION
+                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                ) AS results`;
+                    connection.con.query(sql, [id_enterprise, id_enterprise, date_limit, id_enterprise, date_limit, id_enterprise], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve un proveedor por ID
+            router.post('/get-provider-id', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_provider} = req.body;
+                    const sql = `SELECT * FROM provider WHERE id = ?`;
+                    connection.con.query(sql, id_provider, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Crea un proveedor nuevo
+            router.post('/create-provider', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id_enterprise, name, phone, whatsapp, email, address, country } = req.body;
+                    const sql_e = `SELECT name FROM provider WHERE name = ?;`
+                    connection.con.query(sql_e, name, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if (!result.length) {
+                                //éxito en no encontrar este proveedor
+                                const sql = `INSERT INTO provider (id_enterprise, name, phone, whatsapp, email, address, country, created)
+                                            VALUES (?,?,?,?,?,?,?, NOW());`;
+                                connection.con.query(sql, [id_enterprise, name, phone, whatsapp, email, address, country], (err, response, fields) => {
+                                    if (err) {
+                                        //error de conexion o para crear el proveedor
+                                        res.send({status: 0, data: err});
+                                    } else {
+                                        res.send({status: 1, data: response})
+                                    }
+                                })
+                            } else{
+                                //error porque existe proveedor
+                                res.send({status: 1, data: 'existente'});
+                            }
+                        }
+                    });
+
+
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Edita un proveedor
+            router.post('/edit-provider', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id, name, phone, whatsapp, email, address, country} = req.body;
+                    const sql = `UPDATE provider AS p
+                                SET name=?, phone=?, whatsapp=?, email=?, address=?, country=?
+                                WHERE p.id = ?`;
+                    connection.con.query(sql, [name, phone, whatsapp, email, address, country, id], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
                         }
                     });
                 } catch(error){

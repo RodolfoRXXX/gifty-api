@@ -741,38 +741,6 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
                 connection.con.end;
             });
 
-            // Devuelve datos específicos de la tabla prveedores(provider)
-            router.post('/get-provider-data', auth.verifyToken, async function(req, res, next){
-                try{
-                    let {id_enterprise, date_limit} = req.body;
-                    const sql = `SELECT *
-                                FROM (
-                                    SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
-                                    UNION
-                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
-                                    UNION
-                                    SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.is_stock = 'sin stock' AND p.id_enterprise = ?
-                                    UNION
-                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.is_stock = 'con stock' AND p.id_enterprise = ?
-                                ) AS results`;
-                    connection.con.query(sql, [id_enterprise, id_enterprise, date_limit, id_enterprise, date_limit, id_enterprise], (err, result, fields) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            if(result.length){
-                                res.send({status: 1, data: result});
-                            } else{
-                                res.send({status: 1, data: ''});
-                            }
-                        }
-                    });
-                } catch(error){
-                    //error de conexión
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
             // Devuelve un proveedor por ID
             router.post('/get-provider-id', auth.verifyToken, async function(req, res, next){
                 try{
@@ -843,6 +811,35 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
                             res.send({status: 0, data: err});
                         } else {
                             res.send({status: 1, data: result})
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve datos específicos de la tabla productos
+            router.post('/get-provider-data', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, id_provider} = req.body;
+                    const sql = `SELECT * FROM ( 
+                                SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.provider = ? AND p.id_enterprise = ? 
+                                UNION 
+                                SELECT FORMAT(SUM(p.purchase_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.provider = ? AND p.id_enterprise = ? 
+                                UNION 
+                                SELECT MAX(STR_TO_DATE(purchase_date, '%Y-%m-%d')) FROM product AS p WHERE p.is_stock = 'con stock' AND p.provider = ? AND p.id_enterprise = ?
+                                ) AS results`;
+                    connection.con.query(sql, [id_provider, id_enterprise, id_provider, id_enterprise, id_provider, id_enterprise], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
                         }
                     });
                 } catch(error){

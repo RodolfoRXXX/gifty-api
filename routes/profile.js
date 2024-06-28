@@ -671,28 +671,102 @@ router.post('/get-employee', auth.verifyToken, async function(req, res, next){
             connection.con.end;
         });
 
-        // Devuelve el listado de las ubicaciones
-        router.post('/get-storages', auth.verifyToken, async function(req, res, next){
-            try{
-                let {id_enterprise} = req.body;
-                const sql = `SELECT * FROM storage WHERE id_enterprise = ?`;
-                connection.con.query(sql, id_enterprise, (err, result, fields) => {
-                    if (err) {
-                        res.send({status: 0, data: err});
-                    } else {
-                        if(result.length){
-                            res.send({status: 1, data: result});
-                        } else{
-                            res.send({status: 1, data: ''});
+        //Storages
+            // Devuelve el número total de facturas por id para paginador
+            router.post('/get-count-storages', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT COUNT(*) as total FROM storage WHERE id_enterprise = ?`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
                         }
-                    }
-                });
-            } catch(error){
-                //error de conexión
-                res.send({status: 0, error: error});
-            }
-            connection.con.end;
-        });
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve el listado de los depósitos
+            router.post('/get-storages', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT * FROM storage WHERE id_enterprise = ?`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve un depósitos por ID
+            router.post('/get-storage-id', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_storage} = req.body;
+                    const sql = `SELECT * FROM storage WHERE id = ?`;
+                    connection.con.query(sql, id_storage, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve datos específicos de la tabla storage
+            router.post('/get-storage-data', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, id_storage} = req.body;
+                    const sql = `SELECT * FROM ( 
+                                SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.storage_location = ? AND p.id_enterprise = ? 
+                                UNION 
+                                SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.storage_location = ? AND p.id_enterprise = ? ) 
+                                AS results`;
+                    connection.con.query(sql, [id_storage, id_enterprise, id_storage, id_enterprise], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
 
         //Providers
             // Devuelve el número total de facturas por id para paginador

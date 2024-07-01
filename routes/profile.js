@@ -337,125 +337,157 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
 
 /* ----------------------- GET --------------------------*/
 
-// Devuelve una empresa del listado
-router.post('/get-enterprise', auth.verifyToken, async function(req, res, next){
-    try{
-        let {id} = req.body;
-        const sql = `SELECT * FROM enterprise WHERE id = ?`;
-        connection.con.query(sql, id, (err, result, fields) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                if(result.length){
-                    res.send({status: 1, data: result});
-                } else{
-                    res.send({status: 1, data: ''});
-                }
-            }
-        });
-    } catch(error){
-        //error de conexión
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
-
-// Devuelve una lista de usuarios de una empresa en particular
-router.post('/get-employees', auth.verifyToken, async function(req, res, next){
-    try{
-        let {id_enterprise} = req.body;
-        const sql = `SELECT U.id, U.email, U.state AS verify, (SELECT COUNT(*) FROM employee AS E WHERE E.id_user = U.id) AS "is_employee" FROM users AS U WHERE U.id_enterprise = ?`;
-        connection.con.query(sql, id_enterprise, (err, result, fields) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                if(result.length){
-                    res.send({status: 1, data: result});
-                } else{
-                    res.send({status: 1, data: ''});
-                }
-            }
-        });
-    } catch(error){
-        //error de conexión
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
-
-// Devuelve un empleado del listado
-router.post('/get-employee', auth.verifyToken, async function(req, res, next){
-    try{
-        let {id_user} = req.body;
-        const sql = `SELECT e.id, e.id_user, e.id_enterprise, e.name, e.email, e.address, e.date, e.phone, e.mobile, e.working_hours, e.name_er, e.phone_er, e.state, r.name_role, r.list_of_permissions 
-                    FROM employee AS e INNER JOIN role AS r ON e.role = r.id 
-                    WHERE id_user = ?`;
-        connection.con.query(sql, id_user, (err, result, fields) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                if(result.length){
-                    res.send({status: 1, data: result});
-                } else{
-                    res.send({status: 1, data: ''});
-                }
-            }
-        });
-    } catch(error){
-        //error de conexión
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
-
-
-    // Facturación
-
-        // Devuelve el número total de facturas por id para paginador
-        router.post('/get-count-bills', auth.verifyToken, async function(req, res, next){
-            try{
-                let {id} = req.body;
-                const sql = `SELECT COUNT(*) as total FROM bills WHERE id_enterprise = ?`;
-                connection.con.query(sql, id, (err, result, fields) => {
-                    if (err) {
-                        res.send({status: 0, data: err});
-                    } else {
-                        if(result.length){
-                            res.send({status: 1, data: result});
-                        } else{
-                            res.send({status: 1, data: ''});
+        //Empresa
+            // Devuelve una empresa del listado
+            router.post('/get-enterprise', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id} = req.body;
+                    const sql = `SELECT * FROM enterprise WHERE id = ?`;
+                    connection.con.query(sql, id, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
                         }
-                    }
-                });
-            } catch(error){
-                //error de conexión
-                res.send({status: 0, error: error});
-            }
-            connection.con.end;
-        });
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
 
-        // Devuelve una lista de facturas de la empresa en cuestión
-        router.post('/get-bills', auth.verifyToken, async function(req, res, next){
-            try{
-                let {id, page, size} = req.body;
-                const sql = `SELECT * FROM bills WHERE id_enterprise = ? LIMIT ? OFFSET ?`;
-                connection.con.query(sql, [id, size, size*page], (err, result, fields) => {
-                    if (err) {
-                        res.send({status: 0, data: err});
-                    } else {
-                        if(result.length){
-                            res.send({status: 1, data: result});
-                        } else{
-                            res.send({status: 1, data: ''});
+            // Devuelve una lista de usuarios de una empresa en particular
+            router.post('/get-employees', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT U.id, U.email, U.state AS verify, (SELECT COUNT(*) FROM employee AS E WHERE E.id_user = U.id) AS "is_employee" FROM users AS U WHERE U.id_enterprise = ?`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
                         }
-                    }
-                });
-            } catch(error){
-                //error de conexión
-                res.send({status: 0, error: error});
-            }
-            connection.con.end;
-        });
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve un empleado del listado
+            router.post('/get-employee', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_user} = req.body;
+                    const sql = `SELECT e.id, e.id_user, e.id_enterprise, e.name, e.email, e.address, e.date, e.phone, e.mobile, e.working_hours, e.name_er, e.phone_er, e.state, r.name_role, r.list_of_permissions 
+                                FROM employee AS e INNER JOIN role AS r ON e.role = r.id 
+                                WHERE id_user = ?`;
+                    connection.con.query(sql, id_user, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve datos específicos de cada enterprise PENDIENTE!!!
+            router.post('/get-enterprise-data', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, date_limit} = req.body;
+                    const sql = `SELECT *
+                                FROM (
+                                    SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                    UNION
+                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                    UNION
+                                    SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.is_stock = 'sin stock' AND p.id_enterprise = ?
+                                    UNION
+                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                ) AS results`;
+                    connection.con.query(sql, [id_enterprise, id_enterprise, date_limit, id_enterprise, date_limit, id_enterprise], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+
+        // Facturación
+            // Devuelve el número total de facturas por id para paginador
+            router.post('/get-count-bills', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id} = req.body;
+                    const sql = `SELECT COUNT(*) as total FROM bills WHERE id_enterprise = ?`;
+                    connection.con.query(sql, id, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve una lista de facturas de la empresa en cuestión
+            router.post('/get-bills', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id, page, size} = req.body;
+                    const sql = `SELECT * FROM bills WHERE id_enterprise = ? LIMIT ? OFFSET ?`;
+                    connection.con.query(sql, [id, size, size*page], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
 
     // -----------------------------------
 

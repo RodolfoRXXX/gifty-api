@@ -384,11 +384,11 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Devuelve un empleado del listado
+            // Devuelve un empleado por ID de usuario
             router.post('/get-employee', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_user} = req.body;
-                    const sql = `SELECT e.id, e.id_user, e.id_enterprise, e.name, e.email, e.address, e.date, e.phone, e.mobile, e.working_hours, e.name_er, e.phone_er, e.state, r.name_role, r.list_of_permissions 
+                    const sql = `SELECT e.*, r.name_role, r.list_of_permissions 
                                 FROM employee AS e INNER JOIN role AS r ON e.role = r.id 
                                 WHERE id_user = ?`;
                     connection.con.query(sql, id_user, (err, result, fields) => {
@@ -1503,11 +1503,11 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
         router.post('/get-enterprise-users', auth.verifyToken, async function(req, res, next){
             try{
                 let {id_enterprise} = req.body;
-                const sql = `SELECT u.email, u.thumbnail, u.state AS verified_state,
+                const sql = `SELECT u.email, u.thumbnail, u.status AS verified_state,
                             (SELECT e.id FROM employee AS e WHERE e.id_user = u.id) AS id_employee, 
                             (SELECT e.name FROM employee AS e WHERE e.id_user = u.id) AS name_employee, 
                             (SELECT r.name_role FROM employee AS e INNER JOIN role AS r ON e.role = r.id WHERE e.id_user = u.id) AS role, 
-                            (SELECT e.state FROM employee AS e WHERE e.id_user = u.id) AS state_employee 
+                            (SELECT e.status FROM employee AS e WHERE e.id_user = u.id) AS state_employee 
                             FROM users AS u 
                             WHERE u.id_enterprise = ?`;
                 connection.con.query(sql, id_enterprise, (err, result, fields) => {

@@ -3,16 +3,16 @@ const Jimp = require("jimp");
 //id, image
 
 // imagen, id, id_autor, tabla
-async function save_image(id, table, type, image, width, height, blanck){
+async function save_image(id, table, type, image, width, height, prev_thumb){
     try {
         let base64Image = image.split(';base64,').pop();
         let name_image = id + '-' + table + '-' + type;
         name_image = name_image + '.' + (image.split(';base64,')[0]).split('/')[1]
-        let route = './public/uploads/' + name_image;
+        let route = './public/uploads/' + prev_thumb;
 
         //Verifica si la imagen anterior es la no-image.png
         //Si es, no elimina su ubicación
-        if(!blanck) {
+        if(prev_thumb !== 'no-image.png') {
             //Busca el archivo existente y lo elimina
             if(fs.existsSync(route)) {
                 fs.unlink(route, (err) => {

@@ -143,13 +143,13 @@ router.post('/update-email', auth.verifyToken, async function(req, res, next){
 });
 
 // Carga una nueva imagen de usuario
-router.post('/load-user-image', auth.verifyToken, async (req, res, next) => {
+router.post('/update-user-image', auth.verifyToken, async (req, res, next) => {
     try {
-        let {id, thumbnail, blanck} = req.body;
+        let {id, thumbnail, prev_thumb} = req.body;
         let changedRows;
 
         if(thumbnail.includes(';base64,')){
-            await save_image(id, 'user', 'thumbnail', thumbnail, 350, 350, blanck)
+            await save_image(id, 'user', 'thumbnail', thumbnail, 350, 350, prev_thumb)
             .then( value => {
                 if(value == 'error') throw 'error';
                 else {
@@ -160,14 +160,17 @@ router.post('/load-user-image', auth.verifyToken, async (req, res, next) => {
                 throw error;
             } )
         }
-        const sql_data = `SELECT u.id, u.name, u.email, u.password, u.thumbnail, e.name AS enterprise, u.activation_code, u.state FROM users AS u INNER JOIN enterprise AS e ON u.id_enterprise = e.id WHERE u.id = ?`;
+        const sql_data = `SELECT u.*, e.name AS enterprise, e.thumbnail AS enterprise_thumbnail
+                            FROM users AS u 
+                            INNER JOIN enterprise AS e ON u.id_enterprise = e.id 
+                            WHERE u.id = ?`;
         connection.con.query(sql_data, id, (err, result, field) => {
             if (err) {
                 res.send({status: 0, data: err});
             } else {
-                let user = [{id: result[0].id, name: result[0].name, email: result[0].email, password: result[0].password, thumbnail: thumbnail, enterprise: result[0].enterprise, activation_code: result[0].activation_code, state: result[0].state}]
+                let user = [{id: result[0].id, name: result[0].name, email: result[0].email, password: result[0].password, thumbnail: thumbnail, id_enterprise: result[0].id_enterprise, enterprise: result[0].enterprise, enterprise_thumbnail: result[0].enterprise_thumbnail, activation_code: result[0].activation_code, state: result[0].state}]
                 let token = jwt.sign({data: user}, keys.key);
-                if(blanck) {
+                if(prev_thumb !== thumbnail) {
                     const sql = `UPDATE users SET thumbnail = ? WHERE id = ?`;
                     connection.con.query(sql, [thumbnail, id], (err, result, field) => {
                         if (err) {
@@ -190,13 +193,13 @@ router.post('/load-user-image', auth.verifyToken, async (req, res, next) => {
 });
 
 // Carga un nuevo logo para la empresa
-router.post('/load-logo-image', auth.verifyToken, async (req, res, next) => {
+router.post('/update-logo-image', auth.verifyToken, async (req, res, next) => {
     try {
-        let {id, thumbnail, blanck} = req.body;
+        let {id, thumbnail, prev_thumb} = req.body;
         let changedRows;
 
         if(thumbnail.includes(';base64,')){
-            await save_image(id, 'enterprise', 'thumbnail', thumbnail, 350, 350, blanck)
+            await save_image(id, 'enterprise', 'thumbnail', thumbnail, 350, 350, prev_thumb)
             .then( value => {
                 if(value == 'error') throw 'error';
                 else {
@@ -208,7 +211,7 @@ router.post('/load-logo-image', auth.verifyToken, async (req, res, next) => {
             } )
         }
 
-        if(blanck) {
+        if(prev_thumb !== thumbnail) {
             const sql = `UPDATE enterprise SET thumbnail = ? WHERE id = ?`;
             connection.con.query(sql, [thumbnail, id], (err, result, field) => {
                 if (err) {
@@ -250,18 +253,19 @@ router.post('/update-enterprise', auth.verifyToken, async function(req, res, nex
 // Actualiza los valores de un empleado (personal)
 router.post('/update-employee-personal', auth.verifyToken, async function(req, res, next){
     try {
-        let {id_user, name, email, address, date, phone, mobile } = req.body;
-        const _sql = `UPDATE employee SET name = ?, email = ?, address= ?, date = ?, phone = ?, mobile = ? WHERE id_user = ?`;
-        const _arr = [name, email, address, date, phone, mobile, id_user];
+        let {id, name, date, email, address, phone, mobile, city, state, country } = req.body;
+        const _sql = `UPDATE employee 
+                        SET name = ?, date = ?, email = ?, address = ?, phone = ?, mobile = ?, city = ?, state = ?, country = ? 
+                        WHERE id = ?`;
+        const _arr = [name, date, email, address, phone, mobile, city, state, country, id];
         let changedRows;
-
             connection.con.query(_sql, _arr, (err, result, field) => {
                 if (err) {
                     res.send({status: 0, data: err});
                 } else {
                     changedRows = result.changedRows
-                    const sql_data = `SELECT * FROM employee WHERE id_user = ?`;
-                        connection.con.query(sql_data, id_user, (err, result, field) => {
+                    const sql_data = `SELECT * FROM employee WHERE id = ?`;
+                        connection.con.query(sql_data, id, (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
                             } else {
@@ -280,26 +284,48 @@ router.post('/update-employee-personal', auth.verifyToken, async function(req, r
 // Actualiza los valores de un empleado (laboral)
 router.post('/update-employee-work', auth.verifyToken, async function(req, res, next){
     try {
-        let { id_user, name_er, phone_er } = req.body.data;
-        let _sql = '';
-        let _arr = [];
+        let { id } = req.body.data;
         let changedRows;
 
-        if(req.body.work_hour){
-            let work_hour = JSON.stringify(req.body.work_hour)
-            _sql = `UPDATE employee SET name_er = ?, phone_er = ?, working_hours = ? WHERE id_user = ?`;
-            _arr = [name_er, phone_er, work_hour, id_user];
-        } else {
-            _sql = `UPDATE employee SET name_er = ?, phone_er = ? WHERE id_user = ?`;
-            _arr = [name_er, phone_er, id_user];
-        }
-        connection.con.query(_sql, _arr, (err, result, field) => {
+        let work_hour = JSON.stringify(req.body.work_hour)
+        const _sql = `UPDATE employee SET working_hours = ? WHERE id = ?`;
+        connection.con.query(_sql, [work_hour, id], (err, result, field) => {
             if (err) {
                 res.send({status: 0, data: err});
             } else {
                 changedRows = result.changedRows
-                    const sql_data = `SELECT * FROM employee WHERE id_user = ?`;
-                        connection.con.query(sql_data, id_user, (err, result, field) => {
+                    const sql_data = `SELECT * FROM employee WHERE id = ?`;
+                        connection.con.query(sql_data, id, (err, result, field) => {
+                            if (err) {
+                                res.send({status: 0, data: err});
+                            } else {
+                                    //éxito al modificar y recargar datos
+                                    res.send({status: 1, data: result, changedRows: changedRows});
+                            }
+                        })
+            }
+        })
+    } catch (error) {
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
+
+// Actualiza los valores de un empleado (contactos de emergencia)
+router.post('/update-employee-er-contact', auth.verifyToken, async function(req, res, next){
+    try {
+        let {id, name_er, phone_er } = req.body;
+        const _sql = `UPDATE employee 
+                        SET name_er = ?, phone_er = ? 
+                        WHERE id = ?`;
+        let changedRows;
+            connection.con.query(_sql, [name_er, phone_er, id], (err, result, field) => {
+                if (err) {
+                    res.send({status: 0, data: err});
+                } else {
+                    changedRows = result.changedRows
+                    const sql_data = `SELECT * FROM employee WHERE id = ?`;
+                        connection.con.query(sql_data, id, (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
                             } else {
@@ -307,8 +333,8 @@ router.post('/update-employee-work', auth.verifyToken, async function(req, res, 
                                     res.send({status: 1, data: result, changedRows: changedRows});
                             }
                         })
-            }
-        })
+                }
+            })
     } catch (error) {
         res.send({status: 0, error: error});
     }
@@ -807,11 +833,11 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 // Edita una imagen para un producto por ID
                 router.post('/edit-product-image', auth.verifyToken, async (req, res, next) => {
                     try {
-                        let {id, image, blanck} = req.body;
+                        let {id, image, prev_thumb} = req.body;
                         let changedRows;
 
                         if(image.includes(';base64,')){
-                            await save_image(id, 'product', 'picture', image, 600, 600, blanck)
+                            await save_image(id, 'product', 'picture', image, 600, 600, prev_thumb)
                             .then( value => {
                                 if(value == 'error') throw 'error';
                                 else {
@@ -823,7 +849,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                             } )
                         }
 
-                        if(blanck) {
+                        if(prev_thumb !== image) {
                             const sql = `UPDATE product SET image = ? WHERE id = ?`;
                             connection.con.query(sql, [image, id], (err, result, field) => {
                                 if (err) {

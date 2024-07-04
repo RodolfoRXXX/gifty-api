@@ -193,7 +193,7 @@ router.post('/update-user-image', auth.verifyToken, async (req, res, next) => {
 });
 
 // Carga un nuevo logo para la empresa
-router.post('/update-logo-image', auth.verifyToken, async (req, res, next) => {
+router.post('/update-enterprise-image', auth.verifyToken, async (req, res, next) => {
     try {
         let {id, thumbnail, prev_thumb} = req.body;
         let changedRows;
@@ -210,7 +210,6 @@ router.post('/update-logo-image', auth.verifyToken, async (req, res, next) => {
                 throw error;
             } )
         }
-
         if(prev_thumb !== thumbnail) {
             const sql = `UPDATE enterprise SET thumbnail = ? WHERE id = ?`;
             connection.con.query(sql, [thumbnail, id], (err, result, field) => {
@@ -218,15 +217,15 @@ router.post('/update-logo-image', auth.verifyToken, async (req, res, next) => {
                     res.send({status: 0, data: err});
                 } else {
                     changedRows = result.changedRows
-                    res.send({status: 1, changedRows: changedRows});
+                    res.send({status: 1, data: thumbnail, changedRows: changedRows});
                 }
             })
         } else {
             changedRows = 1
-            res.send({status: 1, changedRows: changedRows});
+            res.send({status: 1, data: thumbnail, changedRows: changedRows});
         }
     } catch (error) {
-        res.send({status: 0, data: error});
+        res.send({status: 0, data: '', data: error});
     }
     connection.con.end;
 });
@@ -1529,7 +1528,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
         router.post('/get-enterprise-users', auth.verifyToken, async function(req, res, next){
             try{
                 let {id_enterprise} = req.body;
-                const sql = `SELECT u.email, u.thumbnail, u.status AS verified_state,
+                const sql = `SELECT u.email, u.thumbnail, u.state AS verified_state,
                             (SELECT e.id FROM employee AS e WHERE e.id_user = u.id) AS id_employee, 
                             (SELECT e.name FROM employee AS e WHERE e.id_user = u.id) AS name_employee, 
                             (SELECT r.name_role FROM employee AS e INNER JOIN role AS r ON e.role = r.id WHERE e.id_user = u.id) AS role, 

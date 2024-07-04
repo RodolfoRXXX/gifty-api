@@ -1531,7 +1531,8 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 const sql = `SELECT u.email, u.thumbnail, u.state AS verified_state,
                             (SELECT e.id FROM employee AS e WHERE e.id_user = u.id) AS id_employee, 
                             (SELECT e.name FROM employee AS e WHERE e.id_user = u.id) AS name_employee, 
-                            (SELECT r.name_role FROM employee AS e INNER JOIN role AS r ON e.role = r.id WHERE e.id_user = u.id) AS role, 
+                            (SELECT r.name_role FROM employee AS e INNER JOIN role AS r ON e.role = r.id WHERE e.id_user = u.id) AS role,
+                            (SELECT r.icon_role FROM employee AS e INNER JOIN role AS r ON e.role = r.id WHERE e.id_user = u.id) AS icon_role, 
                             (SELECT e.status FROM employee AS e WHERE e.id_user = u.id) AS state_employee 
                             FROM users AS u 
                             WHERE u.id_enterprise = ?`;

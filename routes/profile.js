@@ -466,6 +466,71 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+            // Actualiza el campo de clasificación 2
+            router.post('/update-enterprise-option2', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id, name} = req.body;
+
+                    const sql = `UPDATE enterprise SET name_option2 = ? WHERE id = ?`;
+                    connection.con.query(sql, [name, id], (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve el listado de las opciones 1 (Color)
+            router.post('/get-option1', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT * FROM table_option_1 WHERE id_enterprise = ?`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve el listado de las opciones 2 (Medida)
+            router.post('/get-option2', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT * FROM table_option_2 WHERE id_enterprise = ?`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
 
         // Facturación
             // Devuelve el número total de facturas por id para paginador
@@ -1099,51 +1164,6 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-        // Devuelve el listado de las opciones 1 (Color)
-        router.post('/get-option1', auth.verifyToken, async function(req, res, next){
-            try{
-                let {id_enterprise} = req.body;
-                const sql = `SELECT * FROM table_option_1 WHERE id_enterprise = ?`;
-                connection.con.query(sql, id_enterprise, (err, result, fields) => {
-                    if (err) {
-                        res.send({status: 0, data: err});
-                    } else {
-                        if(result.length){
-                            res.send({status: 1, data: result});
-                        } else{
-                            res.send({status: 1, data: ''});
-                        }
-                    }
-                });
-            } catch(error){
-                //error de conexión
-                res.send({status: 0, error: error});
-            }
-            connection.con.end;
-        });
-
-        // Devuelve el listado de las opciones 2 (Medida)
-        router.post('/get-option2', auth.verifyToken, async function(req, res, next){
-            try{
-                let {id_enterprise} = req.body;
-                const sql = `SELECT * FROM table_option_2 WHERE id_enterprise = ?`;
-                connection.con.query(sql, id_enterprise, (err, result, fields) => {
-                    if (err) {
-                        res.send({status: 0, data: err});
-                    } else {
-                        if(result.length){
-                            res.send({status: 1, data: result});
-                        } else{
-                            res.send({status: 1, data: ''});
-                        }
-                    }
-                });
-            } catch(error){
-                //error de conexión
-                res.send({status: 0, error: error});
-            }
-            connection.con.end;
-        });
 
         //Storages
             // Devuelve el número total de facturas por id para paginador

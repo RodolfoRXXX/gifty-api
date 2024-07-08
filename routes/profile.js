@@ -531,6 +531,66 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+            // Actualiza el campo de clasificación 1
+            router.post('/update-enterprise-tableOption1', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id, id_enterprise, name} = req.body;
+                    let sql;
+                    let arr;
+
+                    if(id == 0) {
+                        //Creando un nuevo valor
+                        sql = `INSERT INTO table_option_1 (id_enterprise, name) VALUES (?, ?)`;
+                        arr = [id_enterprise, name];
+                    } else {
+                        //Editando un valor
+                        sql = `UPDATE table_option_1 SET name = ? WHERE id = ?`;
+                        arr = [name, id];
+                    }
+
+                    connection.con.query(sql, arr, (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Actualiza el campo de clasificación 2
+            router.post('/update-enterprise-tableOption2', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id, id_enterprise, name} = req.body;
+                    let sql;
+                    let arr;
+
+                    if(id == 0) {
+                        //Creando un nuevo valor
+                        sql = `INSERT INTO table_option_2 (id_enterprise, name) VALUES (?, ?)`;
+                        arr = [id_enterprise, name];
+                    } else {
+                        //Editando un valor
+                        sql = `UPDATE table_option_2 SET name = ? WHERE id = ?`;
+                        arr = [name, id];
+                    }
+
+                    connection.con.query(sql, arr, (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
 
         // Facturación
             // Devuelve el número total de facturas por id para paginador
@@ -853,6 +913,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+
             //Editar campos de un producto
                 //Crea un producto nuevo pero solo la parte de información básica de producto
                 router.post('/create-product', auth.verifyToken, async function(req, res, next){
@@ -1032,6 +1093,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     }
                     connection.con.end;
                 });
+
 
         //Categorías
             // Devuelve el listado de las categorías
@@ -1262,6 +1324,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+
             //Editar campos de un storage
                 //Crea un depósito nuevo
                 router.post('/create-storage', auth.verifyToken, async function(req, res, next){
@@ -1338,6 +1401,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     }
                     connection.con.end;
                 });
+
 
         //Providers
             // Devuelve el número total de facturas por id para paginador

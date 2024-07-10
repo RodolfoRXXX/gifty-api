@@ -642,6 +642,90 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
     // -----------------------------------
 
 
+        //Pedidos
+            // Devuelve datos específicos de la tabla pedidos
+            router.post('/get-orders-data', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, date_limit} = req.body;
+                    const sql = `SELECT *
+                                FROM (
+                                    SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                    UNION
+                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                    UNION
+                                    SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.is_stock = 'sin stock' AND p.id_enterprise = ?
+                                    UNION
+                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                ) AS results`;
+                    connection.con.query(sql, [id_enterprise, id_enterprise, date_limit, id_enterprise, date_limit, id_enterprise], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve el número total de pedidos por id_enterprise para paginador
+            router.post('/get-count-orders', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT COUNT(*) as total FROM orders WHERE id_enterprise = ?`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve una lista de pedidos de la empresa(id_enterprise)
+            router.post('/get-orders', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, page, size} = req.body;
+                    const sql = `SELECT o.*, c.name AS customer_name, c.email AS customer_email, c.thumbnail AS customer_thumbnail 
+                                FROM orders AS o INNER JOIN customer AS c ON o.customer = c.id 
+                                WHERE o.id_enterprise = ?
+                                LIMIT ? 
+                                OFFSET ?`;
+                    connection.con.query(sql, [id_enterprise, size, size*page], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });    
+
+
         // Productos
             // Devuelve datos específicos de la tabla productos
             router.post('/get-products-data', auth.verifyToken, async function(req, res, next){

@@ -647,17 +647,16 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             router.post('/get-orders-data', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_enterprise, date_limit} = req.body;
-                    const sql = `SELECT *
-                                FROM (
-                                    SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
-                                    UNION
-                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
-                                    UNION
-                                    SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.is_stock = 'sin stock' AND p.id_enterprise = ?
-                                    UNION
-                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.is_stock = 'con stock' AND p.id_enterprise = ?
-                                ) AS results`;
-                    connection.con.query(sql, [id_enterprise, id_enterprise, date_limit, id_enterprise, date_limit, id_enterprise], (err, result, fields) => {
+                    const sql = `SELECT 
+                                COUNT(CASE WHEN o.status = 2 THEN 1 END) as d2,
+                                COUNT(CASE WHEN o.status = 1 AND o.date > ? THEN 1 END) as d1,
+                                COUNT(CASE WHEN o.status = 5 AND o.date > ? THEN 1 END) as d5,
+                                COUNT(CASE WHEN o.status = 4 AND o.date > ? THEN 1 END) as d4
+                                    FROM 
+                                        orders as o
+                                    WHERE 
+                                        o.id_enterprise = ?`;
+                    connection.con.query(sql, [date_limit, date_limit, date_limit, id_enterprise], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {

@@ -722,7 +722,92 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     res.send({status: 0, error: error});
                 }
                 connection.con.end;
-            });    
+            });
+
+            // Devuelve un remito por ID solamente
+            router.post('/get-order-detail-by-id', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_order} = req.body;
+                    const sql = `SELECT o.*,
+                                e.name AS e_name, e.email AS e_email, e.address AS e_address, e.phone_1 as e_phone, e.cuit as e_cuit, e.city as e_city, e.state as e_state, e.country as e_country, e.cp as e_cp,
+                                c.name as c_name, c.email as c_email, c.phone as c_phone, c.mobile as c_mobile, c.address as c_address, c.city as c_city, c.state as c_state, c.country as c_country 
+                                FROM orders AS o 
+                                INNER JOIN enterprise AS e ON o.id_enterprise = e.id 
+                                INNER JOIN customer AS c ON o.customer = c.id 
+                                WHERE o.id = ?`;
+                    connection.con.query(sql, id_order, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve una lista de productos del remito abierto
+            router.post('/get-products-by-order', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {detail} = req.body;
+                    const placeholders = detail.map(() => '?').join(',');
+                    const sql = `SELECT p.*
+                                FROM product AS p
+                                WHERE p.id IN (${placeholders})`;
+                    connection.con.query(sql, detail, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Actualiza el detalle de un pedido
+            router.post('/update-order-detail', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id, detail} = req.body;
+                    let sql;
+                    let arr;
+
+                    if(id == 0) {
+                        //Creando un nuevo valor
+                        sql = `INSERT INTO table_option_1 (id_enterprise, name) VALUES (?, ?)`;
+                        arr = [id_enterprise, detail];
+                    } else {
+                        //Editando un valor
+                        sql = `UPDATE orders SET detail = ? WHERE id = ?`;
+                        arr = [detail, id];
+                    }
+
+                    connection.con.query(sql, arr, (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
 
 
         // Productos

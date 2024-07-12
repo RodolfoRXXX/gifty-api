@@ -1081,6 +1081,47 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+            // Devuelve un producto por ID o un conjunto por nombre
+            router.post('/get-product-id-name', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_product, name, id_enterprise} = req.body;
+                    let sql;
+                    let arr;
+                    if(id_product > 0) {
+                        //busca por ID
+                        sql = `SELECT p.name, p.description, p.image, t1.name AS option_1, t2.name AS option_2 
+                                FROM product AS p 
+                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id 
+                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
+                                WHERE p.id = ?`;
+                                arr = [id_product];
+                    } else if(name.length > 0) {
+                        //Busca por name
+                        sql = `SELECT p.name, p.description, p.image, t1.name AS option_1, t2.name AS option_2 
+                                FROM product AS p 
+                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id 
+                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
+                                WHERE p.id_enterprise = ? AND p.name LIKE CONCAT('p', '%')`;
+                                arr = [id_enterprise, name];
+                    }
+                    connection.con.query(sql, arr, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
 
             //Editar campos de un producto
                 //Crea un producto nuevo pero solo la parte de información básica de producto

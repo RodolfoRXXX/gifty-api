@@ -919,6 +919,34 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+            //Devuelve opciones para agregar un producto nuevo a un remito
+            router.post('/get-products-options', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, text} = req.body;
+                    const sql = `SELECT p.id, p.name, p.description, p.image, p.sale_price, p.sku, p.state, p.stock_available, t1.name AS option_1_name, t2.name AS option_2_name 
+                                FROM product AS p
+                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id
+                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
+                                WHERE p.name LIKE ? AND p.id_enterprise = ?
+                                ORDER BY name`;
+                    connection.con.query(sql, [`${text}%`, id_enterprise], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
             // Devuelve un producto por id_enterprise, name, id_option_1, id_option_2
             router.post('/get-product-detail', auth.verifyToken, async function(req, res, next){
                 try{

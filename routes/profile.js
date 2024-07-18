@@ -753,7 +753,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Devuelve una lista de productos del remito abierto
+            // Devuelve una lista de productos del remito abierto donde paso los ids de los productos
             router.post('/get-products-by-order', auth.verifyToken, async function(req, res, next){
                 try{
                     let {detail} = req.body;
@@ -779,7 +779,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Actualiza el detalle de un pedido
+ //NO TERMINADA!!!           // Actualiza el detalle de un pedido
             router.post('/update-order-detail', auth.verifyToken, async function(req, res, next){
                 try {
                     let {id, detail} = req.body;
@@ -804,6 +804,104 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                         }
                     })
                 } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Actualizar el cliente en el remito
+            router.post('/update-order-customer', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id, customer} = req.body;
+
+                    const sql = `UPDATE order name_option2 = ? WHERE id = ?`;
+                    connection.con.query(sql, [name, id], (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Devuelve opciones de productos para agregar un producto nuevo a un remito de acuerdo al texto ingresado
+            router.post('/get-products-options', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, text} = req.body;
+                    const sql = `SELECT p.id, p.name, p.description, p.image, p.sale_price, p.sku, p.state, p.stock_available, t1.name AS option_1_name, t2.name AS option_2_name 
+                                FROM product AS p
+                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id
+                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
+                                WHERE p.name LIKE ? AND p.id_enterprise = ?
+                                ORDER BY name`;
+                    connection.con.query(sql, [`${text}%`, id_enterprise], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Devuelve opciones de CLIENTES para agregar un cliente ya existente a un remito abierto
+            router.post('/get-customer-options', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, text} = req.body;
+                    const sql = `SELECT *
+                                FROM customer AS c
+                                WHERE c.name LIKE ? AND c.id_enterprise = ?
+                                ORDER BY name`;
+                    connection.con.query(sql, [`${text}%`, id_enterprise], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+        
+        // Clientes
+            // Devuelve el cliente buscado por ID
+            router.post('/get-customer-id', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_customer} = req.body;
+                    const sql = `SELECT * FROM customer WHERE id = ?`;
+                    connection.con.query(sql, id_customer, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
                     res.send({status: 0, error: error});
                 }
                 connection.con.end;
@@ -902,34 +1000,6 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                                 WHERE p.id_enterprise = ?
                                 ORDER BY p.name`;
                     connection.con.query(sql, id_enterprise, (err, result, fields) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            if(result.length){
-                                res.send({status: 1, data: result});
-                            } else{
-                                res.send({status: 1, data: ''});
-                            }
-                        }
-                    });
-                } catch(error){
-                    //error de conexión
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
-            //Devuelve opciones para agregar un producto nuevo a un remito
-            router.post('/get-products-options', auth.verifyToken, async function(req, res, next){
-                try{
-                    let {id_enterprise, text} = req.body;
-                    const sql = `SELECT p.id, p.name, p.description, p.image, p.sale_price, p.sku, p.state, p.stock_available, t1.name AS option_1_name, t2.name AS option_2_name 
-                                FROM product AS p
-                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id
-                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
-                                WHERE p.name LIKE ? AND p.id_enterprise = ?
-                                ORDER BY name`;
-                    connection.con.query(sql, [`${text}%`, id_enterprise], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {

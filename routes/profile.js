@@ -779,43 +779,23 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
- //NO TERMINADA!!!           // Actualiza el detalle de un pedido
+            // Actualiza el detalle de un pedido o lo crea
             router.post('/update-order-detail', auth.verifyToken, async function(req, res, next){
                 try {
-                    let {id, detail} = req.body;
+                    let {id, id_enterprise, date, customer, detail, shipment, observation, status} = req.body;
                     let sql;
                     let arr;
 
                     if(id == 0) {
                         //Creando un nuevo valor
-                        sql = `INSERT INTO table_option_1 (id_enterprise, name) VALUES (?, ?)`;
-                        arr = [id_enterprise, detail];
+                        sql = `INSERT INTO orders (id_enterprise, date, customer, detail, shipment, observation, status) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+                        arr = [id_enterprise, date, customer, detail, shipment, observation, status];
                     } else {
                         //Editando un valor
-                        sql = `UPDATE orders SET detail = ? WHERE id = ?`;
-                        arr = [detail, id];
+                        sql = `UPDATE orders SET id_enterprise = ?, customer = ?, detail = ? WHERE id = ?`;
+                        arr = [id_enterprise, customer, detail, id];
                     }
-
                     connection.con.query(sql, arr, (err, result, field) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            res.send({status: 1, data: result})
-                        }
-                    })
-                } catch (error) {
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
-            //Actualizar el cliente en el remito
-            router.post('/update-order-customer', auth.verifyToken, async function(req, res, next){
-                try {
-                    let {id, customer} = req.body;
-
-                    const sql = `UPDATE order name_option2 = ? WHERE id = ?`;
-                    connection.con.query(sql, [name, id], (err, result, field) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {
@@ -884,6 +864,40 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
 
         
         // Clientes
+            //Crea un nuevo cliente
+            router.post('/create-customer', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, name, cuit, email, phone, mobile, address, city, state, country, status} = req.body;
+                    const sql_e = `SELECT name FROM customer WHERE name = ?;`
+                    connection.con.query(sql_e, name, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if (!result.length) {
+                                //éxito en no encontrar esta categoría
+                                const sql = `INSERT INTO customer(id_enterprise, name, cuit, email, phone, mobile, address, city, state, country, status, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
+                                connection.con.query(sql, [id_enterprise, name, cuit, email, phone, mobile, address, city, state, country, status], (err, response, fields) => {
+                                    if (err) {
+                                        //error de conexion o para crear la categoría
+                                        res.send({status: 0, data: err});
+                                    } else {
+                                        let client = [{id: result.insertId, id_enterprise: id_enterprise, thumbnail: 'no-image.png', name: name, cuit: cuit, email: email, phone: phone, mobile: mobile, address: address, city: city, state: state, country: country, status: status}];
+                                        res.send({status: 1, data: response, client: client})
+                                    }
+                                })
+                            } else{
+                                //error porque existe la categoría
+                                res.send({status: 1, data: 'existente'});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
             // Devuelve el cliente buscado por ID
             router.post('/get-customer-id', auth.verifyToken, async function(req, res, next){
                 try{

@@ -642,7 +642,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
     // -----------------------------------
 
 
-        //Pedidos
+        //Remitos/Pedidos
             // Devuelve datos específicos de la tabla pedidos
             router.post('/get-orders-data', auth.verifyToken, async function(req, res, next){
                 try{

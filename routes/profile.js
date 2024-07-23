@@ -1091,8 +1091,10 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             router.post('/get-product-detail-by-id', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_product} = req.body;
-                    const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color , s.name AS storage_name, prov.name AS provider_name 
-                                FROM product AS p INNER JOIN categories AS c ON p.category = c.id 
+                    const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color, s.name AS storage_name, prov.name AS provider_name, t1.name AS option_1_name, t2.name AS option_2_name 
+                                FROM product AS p INNER JOIN categories AS c ON p.category = c.id
+                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id 
+                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
                                 INNER JOIN storage AS s ON p.storage_location = s.id 
                                 INNER JOIN provider AS prov ON p.provider = prov.id 
                                 WHERE p.id = ?`;

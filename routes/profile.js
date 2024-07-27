@@ -779,35 +779,6 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Actualiza el detalle de un pedido o lo crea
-            router.post('/update-order-detail', auth.verifyToken, async function(req, res, next){
-                try {
-                    let {id, id_enterprise, date, customer, detail, shipment, observation, status} = req.body;
-                    let sql;
-                    let arr;
-
-                    if(id == 0) {
-                        //Creando un nuevo valor
-                        sql = `INSERT INTO orders (id_enterprise, date, customer, detail, shipment, observation, status) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-                        arr = [id_enterprise, date, customer, detail, shipment, observation, status];
-                    } else {
-                        //Editando un valor
-                        sql = `UPDATE orders SET id_enterprise = ?, customer = ?, detail = ? WHERE id = ?`;
-                        arr = [id_enterprise, customer, detail, id];
-                    }
-                    connection.con.query(sql, arr, (err, result, field) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            res.send({status: 1, data: result})
-                        }
-                    })
-                } catch (error) {
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
             //Devuelve opciones de productos para agregar un producto nuevo a un remito de acuerdo al texto ingresado
             router.post('/get-products-options', auth.verifyToken, async function(req, res, next){
                 try{
@@ -860,6 +831,100 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     res.send({status: 0, error: error});
                 }
                 connection.con.end;
+            });
+
+            //Actualiza el remito elegido y el stock disponible de sus productos si es que se realizan dichos cambios
+            router.post('/update-order-detail', auth.verifyToken, async function(req, res, next) {
+                const { form: { id, customer, detail, shipment, observation }, edit: editRegister } = req.body;
+              
+                async function updateOrdersAndProducts(conect, id, customer, detail, shipment, observation, editRegister) {
+                    return new Promise((resolve, reject) => {
+                        // Consulta de actualización para la tabla "orders"
+                        let orderUpdates = [];
+                            (customer != 0)?orderUpdates.push('customer = ?'):'';
+                            (detail != '')?orderUpdates.push('detail = ?'):'';
+                            (shipment != '')?orderUpdates.push('shipment = ?'):'';
+                            (observation != '')?orderUpdates.push('observation = ?'):'';
+                        
+                        let orderValues = [];
+                            (customer != 0)?orderValues.push(customer):'';
+                            (detail != '')?orderValues.push(detail):'';
+                            (shipment != '')?orderValues.push(shipment):'';
+                            (observation != '')?orderValues.push(observation):'';
+                            orderValues.push(id);
+
+
+                        let orderQuery = `UPDATE orders SET ${orderUpdates.join(', ')} WHERE id = ?`;
+              
+                        conect.query(orderQuery, orderValues, (err, results) => {
+                            if (err) {
+                                return conect.rollback(() => {
+                                    reject(err);
+                                });
+                            }
+                
+                            if (editRegister && editRegister.length > 0) {
+                            // Construir las consultas de actualización para la tabla "product"
+                            let productQueries = [];
+                            editRegister.forEach(product => {
+                                productQueries.push(
+                                new Promise((resolve, reject) => {
+                                    let productQuery = `UPDATE product SET stock_available = (stock_available - ?) WHERE id = ?`;
+                                    conect.query(productQuery, [product.editQty, product.id_product], (err, results) => {
+                                        if (err) return reject(err);
+                                        resolve(results);
+                                    });
+                                })
+                                );
+                            });
+                
+                            Promise.all(productQueries)
+                                .then(() => {
+                                    conect.commit(err => {
+                                        if (err) {
+                                            return conect.rollback(() => {
+                                                reject(err);
+                                            });
+                                        }
+                                        resolve(results);
+                                    });
+                                })
+                                .catch(err => {
+                                    conect.rollback(() => {
+                                        reject(err);
+                                    });
+                                });
+                            } else {
+                                conect.commit(err => {
+                                    if (err) {
+                                        return conect.rollback(() => {
+                                            reject(err);
+                                        });
+                                    }
+                                    resolve(results);
+                                });
+                            }
+                        });
+                    });
+                }
+              
+                connection.con.getConnection((err, conect) => {
+                  if (err) {
+                    res.send({status: 0, error: err});
+                    return;
+                  }
+              
+                  updateOrdersAndProducts(conect, id, customer, detail, shipment, observation, editRegister)
+                    .then( response  => {
+                      res.send({status: 1, data: response});
+                    })
+                    .catch(err => {
+                      res.send({status: 0, error: err});
+                    })
+                    .finally(() => {
+                      conect.release();
+                    });
+                });
             });
 
         

@@ -677,8 +677,9 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             // Devuelve el número total de pedidos por id_enterprise para paginador
             router.post('/get-count-orders', auth.verifyToken, async function(req, res, next){
                 try{
-                    let {id_enterprise} = req.body;
-                    const sql = `SELECT COUNT(*) as total FROM orders WHERE id_enterprise = ?`;
+                    let {id_enterprise, seller} = req.body;
+                    let seller_filter = (seller)?`AND seller = ${seller}`:'';
+                    const sql = `SELECT COUNT(*) as total FROM orders WHERE id_enterprise = ? ${seller_filter}`;
                     connection.con.query(sql, id_enterprise, (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
@@ -700,10 +701,11 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             // Devuelve una lista de pedidos de la empresa(id_enterprise)
             router.post('/get-orders', auth.verifyToken, async function(req, res, next){
                 try{
-                    let {id_enterprise, page, size} = req.body;
+                    let {id_enterprise, page, size, seller} = req.body;
+                    let seller_filter = (seller)?`AND o.seller = ${seller}`:'';
                     const sql = `SELECT o.*, c.name AS customer_name, c.email AS customer_email, c.thumbnail AS customer_thumbnail 
                                 FROM orders AS o INNER JOIN customer AS c ON o.customer = c.id 
-                                WHERE o.id_enterprise = ?
+                                WHERE o.id_enterprise = ? ${seller_filter}
                                 LIMIT ? 
                                 OFFSET ?`;
                     connection.con.query(sql, [id_enterprise, size, size*page], (err, result, fields) => {

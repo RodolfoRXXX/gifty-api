@@ -646,17 +646,29 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             // Devuelve datos específicos de la tabla pedidos
             router.post('/get-orders-data', auth.verifyToken, async function(req, res, next){
                 try{
-                    let {id_enterprise, date_limit} = req.body;
-                    const sql = `SELECT 
-                                COUNT(CASE WHEN o.status = 2 THEN 1 END) as d2,
-                                COUNT(CASE WHEN o.status = 1 AND o.date > ? THEN 1 END) as d1,
-                                COUNT(CASE WHEN o.status = 5 AND o.date > ? THEN 1 END) as d5,
-                                COUNT(CASE WHEN o.status = 4 AND o.date > ? THEN 1 END) as d4
-                                    FROM 
-                                        orders as o
-                                    WHERE 
-                                        o.id_enterprise = ?`;
-                    connection.con.query(sql, [date_limit, date_limit, date_limit, id_enterprise], (err, result, fields) => {
+                    let {id_enterprise, date_limit, seller} = req.body;
+                    let seller_filter = (seller)?`AND seller = ${seller}`:'';
+                    const sql = `SELECT status_value, COUNT(*) AS count_status 
+                                FROM ( SELECT JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) AS status_value 
+                                    FROM orders AS o
+                                    JOIN ( 
+                                        SELECT 0 AS i 
+                                        UNION ALL SELECT 1 
+                                        UNION ALL SELECT 2 
+                                        UNION ALL SELECT 3 
+                                        UNION ALL SELECT 4 
+                                        UNION ALL SELECT 5 
+                                        UNION ALL SELECT 6 
+                                        UNION ALL SELECT 7 
+                                        UNION ALL SELECT 8 
+                                        UNION ALL SELECT 9 
+                                    ) AS idx 
+                                    ON JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) IS NOT NULL
+                                    WHERE o.id_enterprise = ? AND o.date > ? ${seller_filter} 
+                                ) AS subquery 
+                                GROUP BY status_value 
+                                ORDER BY status_value;`;
+                    connection.con.query(sql, [id_enterprise, date_limit], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {

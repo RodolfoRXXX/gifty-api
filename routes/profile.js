@@ -703,8 +703,10 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 try{
                     let {id_enterprise, page, size, seller} = req.body;
                     let seller_filter = (seller)?`AND o.seller = ${seller}`:'';
-                    const sql = `SELECT o.*, c.name AS customer_name, c.email AS customer_email, c.thumbnail AS customer_thumbnail 
-                                FROM orders AS o INNER JOIN customer AS c ON o.customer = c.id 
+                    const sql = `SELECT o.*, c.name AS customer_name, c.email AS customer_email, c.thumbnail AS customer_thumbnail, e.name AS employee_name
+                                FROM orders AS o 
+                                INNER JOIN customer AS c ON o.customer = c.id
+                                INNER JOIN employee AS e ON o.seller = e.id 
                                 WHERE o.id_enterprise = ? ${seller_filter}
                                 LIMIT ? 
                                 OFFSET ?`;

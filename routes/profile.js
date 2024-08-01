@@ -1129,6 +1129,25 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 });
             });
 
+            //Abre el remito que está cerrado, solo hace eso
+            router.post('/update-order-open-state', auth.verifyToken, async function(req, res, next) {
+                try {
+                    let { id, status } = req.body;
+
+                    const sql = `UPDATE orders SET status = ? WHERE id = ?`;
+                    connection.con.query(sql, [status, id], (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
         
         // Clientes
             //Crea un nuevo cliente

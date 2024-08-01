@@ -1034,6 +1034,101 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 });
             });
 
+            //Actualiza el estado del remito y lo cierra si se cumplen ciertas condiciones(no hay productos "no entregados")
+            router.post('/update-order-state', auth.verifyToken, async function(req, res, next) {
+                const { form: { id, detail }, edit: editRegister, close_order: close_order } = req.body;
+              
+                async function updateOrdersAndProductsAndStatus(conect, id, detail, editRegister, close_order) {
+                    return new Promise((resolve, reject) => {
+                        // Consulta de actualización para la tabla "orders"
+                        let orderUpdates = [];
+                            (detail != '')?orderUpdates.push('detail = ?'):'';
+                            orderUpdates.push('status = ?');
+                        
+                        let orderValues = [];
+                            (detail != '')?orderValues.push(detail):'';
+                            (close_order)?orderValues.push(0):orderValues.push(1);
+                            orderValues.push(id);
+
+
+                        let orderQuery = `UPDATE orders SET ${orderUpdates.join(', ')} WHERE id = ?`;
+              
+                        conect.query(orderQuery, orderValues, (err, results) => {
+                            if (err) {
+                                return conect.rollback(() => {
+                                    reject(err);
+                                });
+                            }
+                
+                            if (editRegister && editRegister.length > 0) {
+                            // Construir las consultas de actualización para la tabla "product"
+                            let productQueries = [];
+                            editRegister.forEach(product => {
+                                productQueries.push(
+                                new Promise((resolve, reject) => {
+                                    let query;
+                                    if(product.type == 'real') {
+                                        query = `UPDATE product SET stock_real = (stock_real - ?) WHERE id = ?`;
+                                    } else {
+                                        query = `UPDATE product SET stock_available = (stock_available - ?) WHERE id = ?`;
+                                    }
+                                    conect.query(query, [product.editQty, product.id_product], (err, results) => {
+                                        if (err) return reject(err);
+                                        resolve(results);
+                                    });
+                                })
+                                );
+                            });
+                
+                            Promise.all(productQueries)
+                                .then(() => {
+                                    conect.commit(err => {
+                                        if (err) {
+                                            return conect.rollback(() => {
+                                                reject(err);
+                                            });
+                                        }
+                                        resolve(results);
+                                    });
+                                })
+                                .catch(err => {
+                                    conect.rollback(() => {
+                                        reject(err);
+                                    });
+                                });
+                            } else {
+                                conect.commit(err => {
+                                    if (err) {
+                                        return conect.rollback(() => {
+                                            reject(err);
+                                        });
+                                    }
+                                    resolve(results);
+                                });
+                            }
+                        });
+                    });
+                }
+              
+                connection.con.getConnection((err, conect) => {
+                  if (err) {
+                    res.send({status: 0, error: err});
+                    return;
+                  }
+              
+                  updateOrdersAndProductsAndStatus(conect, id, detail, editRegister, close_order)
+                    .then( response  => {
+                      res.send({status: 1, data: response});
+                    })
+                    .catch(err => {
+                      res.send({status: 0, error: err});
+                    })
+                    .finally(() => {
+                      conect.release();
+                    });
+                });
+            });
+
         
         // Clientes
             //Crea un nuevo cliente

@@ -713,8 +713,8 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-             // Devuelve la suma del precio total de los productos entregados/vendidos
-             router.post('/get-data-total-sale', auth.verifyToken, async function(req, res, next){
+            // Devuelve la suma del precio total de los productos entregados/vendidos
+            router.post('/get-data-total-sale', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_enterprise, date_limit, seller} = req.body;
                     let seller_filter = (seller)?`AND seller = ${seller}`:'';
@@ -739,6 +739,64 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                                     AND JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) = '1'
                                 ) AS subquery;`;
                     connection.con.query(sql, [id_enterprise, date_limit], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve la información de las ventas totales por período seleccionado
+            router.post('/get-data-sale-balance', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, range, seller} = req.body;
+                    let seller_filter = (seller)?`AND seller = ${seller}`:'';
+                    const sql = `SELECT 
+                                    CASE 
+                                        WHEN ? = 'day' THEN DATE_FORMAT(date, '%Y-%d-%m')
+                                        WHEN ? = 'week' THEN CONCAT(YEAR(date), '-W', WEEK(date, 1))
+                                        WHEN ? = 'month' THEN DATE_FORMAT(date, '%m')
+                                    END AS period,
+                                    SUM(amount) AS response
+                                FROM (
+                                    SELECT 
+                                        date,
+                                        CAST(JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].price'))) AS DECIMAL(10, 2)) AS amount
+                                    FROM orders
+                                    JOIN (
+                                        SELECT 0 AS i 
+                                        UNION ALL SELECT 1 
+                                        UNION ALL SELECT 2 
+                                        UNION ALL SELECT 3 
+                                        UNION ALL SELECT 4 
+                                        UNION ALL SELECT 5 
+                                        UNION ALL SELECT 6 
+                                        UNION ALL SELECT 7 
+                                        UNION ALL SELECT 8 
+                                        UNION ALL SELECT 9
+                                    ) AS idx 
+                                    ON JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) IS NOT NULL
+                                    WHERE id_enterprise = ? ${seller_filter} 
+                                    AND date > CASE 
+                                                    WHEN ? = 'day' THEN DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                                                    WHEN ? = 'week' THEN DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
+                                                    WHEN ? = 'month' THEN DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+                                                END
+                                    AND JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) = '1'
+                                ) AS subquery
+                                GROUP BY period
+                                ORDER BY period;`;
+                    connection.con.query(sql, [range, range, range, id_enterprise, range, range, range], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {

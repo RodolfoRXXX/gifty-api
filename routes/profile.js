@@ -434,6 +434,56 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+            // Devuelve un empleado por ID de empleado
+            router.post('/get-employee-ID', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_employee} = req.body;
+                    const sql = `SELECT e.*, r.name_role, r.list_of_permissions 
+                                FROM employee AS e INNER JOIN role AS r ON e.role = r.id 
+                                WHERE e.id = ?`;
+                    connection.con.query(sql, id_employee, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve un usuario por ID de user
+            router.post('/get-user-ID', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_user} = req.body;
+                    const sql = `SELECT * 
+                                FROM users AS u
+                                WHERE u.id = ?`;
+                    connection.con.query(sql, id_user, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
             // Devuelve datos específicos de cada enterprise PENDIENTE!!!
             router.post('/get-enterprise-data', auth.verifyToken, async function(req, res, next){
                 try{

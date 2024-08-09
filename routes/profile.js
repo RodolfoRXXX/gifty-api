@@ -641,6 +641,199 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+        // Configuración - Data
+            //Crear empleado nuevo
+            router.post('/create-employee', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_user, id_enterprise} = req.body;
+                    const sql_e = `SELECT * FROM employee WHERE id_user = ?;`
+                    connection.con.query(sql_e, id_user, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if (!result.length) {
+                                //éxito en no encontrar el empleado
+                                const sql = `INSERT INTO employee(id_user, id_enterprise, created) VALUES (?, ?, NOW())`;
+                                connection.con.query(sql, [id_user, id_enterprise], (err, response, fields) => {
+                                    if (err) {
+                                        //error de conexion o para crear la categoría
+                                        res.send({status: 0, data: err});
+                                    } else {
+                                        res.send({status: 1, data: response})
+                                    }
+                                })
+                            } else{
+                                //error porque existe la categoría
+                                res.send({status: 1, data: 'existente'});
+                            }
+                        }
+                    });
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Cambiar el estado del empleado
+            router.post('/change-employee-state', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id_employee, status} = req.body;
+
+                    const sql = `UPDATE employee SET status=? WHERE id = ?`;
+                    connection.con.query(sql, [status, id_employee], (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Devuelve el total de ventas realizadas
+            router.post('/get-user-total-sale', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, date_limit, seller} = req.body;
+                    let seller_filter = (seller)?`AND seller = ${seller}`:'';
+                    const sql = `SELECT SUM(amount) AS response
+                                FROM (
+                                    SELECT CAST(JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].price'))) AS DECIMAL(10, 2)) AS amount
+                                    FROM orders AS o
+                                    JOIN (
+                                        SELECT 0 AS i 
+                                        UNION ALL SELECT 1 
+                                        UNION ALL SELECT 2 
+                                        UNION ALL SELECT 3 
+                                        UNION ALL SELECT 4 
+                                        UNION ALL SELECT 5 
+                                        UNION ALL SELECT 6 
+                                        UNION ALL SELECT 7 
+                                        UNION ALL SELECT 8 
+                                        UNION ALL SELECT 9
+                                    ) AS idx 
+                                    ON JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) IS NOT NULL
+                                    WHERE o.id_enterprise = ? AND o.date > ? AND o.status = 1 ${seller_filter}
+                                    AND JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) = '1'
+                                ) AS subquery;`;
+                    connection.con.query(sql, [id_enterprise, date_limit], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Devuelve el total de ventas realizadas
+            router.post('/get-user-pending', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, date_limit, seller} = req.body;
+                    let seller_filter = (seller)?`AND seller = ${seller}`:'';
+                    const sql = `SELECT SUM(amount) AS response
+                                FROM (
+                                    SELECT CAST(JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].price'))) AS DECIMAL(10, 2)) AS amount
+                                    FROM orders AS o
+                                    JOIN (
+                                        SELECT 0 AS i 
+                                        UNION ALL SELECT 1 
+                                        UNION ALL SELECT 2 
+                                        UNION ALL SELECT 3 
+                                        UNION ALL SELECT 4 
+                                        UNION ALL SELECT 5 
+                                        UNION ALL SELECT 6 
+                                        UNION ALL SELECT 7 
+                                        UNION ALL SELECT 8 
+                                        UNION ALL SELECT 9
+                                    ) AS idx 
+                                    ON JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) IS NOT NULL
+                                    WHERE o.id_enterprise = ? AND o.date > ? AND o.status = 1 ${seller_filter}
+                                    AND JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) = '2'
+                                ) AS subquery;`;
+                    connection.con.query(sql, [id_enterprise, date_limit], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Devuelve el total de ventas realizadas
+            router.post('/get-user-open-orders', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, date_limit, seller} = req.body;
+                    let seller_filter = (seller)?`AND seller = ${seller}`:'';
+                    const sql = `SELECT COUNT(*) AS response
+                                FROM orders AS o 
+                                WHERE o.id_enterprise = 2 AND o.date > ? AND o.status = 1 ${seller_filter};`;
+                    connection.con.query(sql, [id_enterprise, date_limit], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Devuelve el total de ventas realizadas
+            router.post('/get-user-relative', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, date_limit, seller} = req.body;
+                    let seller_filter = (seller)?`AND seller = ${seller}`:'';
+                    const sql = `SELECT COUNT(
+                                            CASE WHEN o.status = 0 OR o.status = 1 THEN 1 END) AS total, 
+                                        COUNT(
+                                            CASE WHEN o.status = 1 THEN 1 END) AS open 
+                                FROM orders AS o 
+                                WHERE o.id_enterprise = 2 AND o.date > ? ${seller_filter};`;
+                    connection.con.query(sql, [id_enterprise, date_limit], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
 
         // Facturación
             // Devuelve el número total de facturas por id para paginador

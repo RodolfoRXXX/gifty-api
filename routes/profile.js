@@ -645,16 +645,16 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             //Crear empleado nuevo
             router.post('/create-employee', auth.verifyToken, async function(req, res, next){
                 try{
-                    let {id_user, id_enterprise} = req.body;
+                    let {id, id_enterprise, role} = req.body;
                     const sql_e = `SELECT * FROM employee WHERE id_user = ?;`
-                    connection.con.query(sql_e, id_user, (err, result, fields) => {
+                    connection.con.query(sql_e, id, (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {
                             if (!result.length) {
                                 //éxito en no encontrar el empleado
-                                const sql = `INSERT INTO employee(id_user, id_enterprise, created) VALUES (?, ?, NOW())`;
-                                connection.con.query(sql, [id_user, id_enterprise], (err, response, fields) => {
+                                const sql = `INSERT INTO employee(id_user, id_enterprise, role, created) VALUES (?, ?, ?, NOW())`;
+                                connection.con.query(sql, [id, id_enterprise, role], (err, response, fields) => {
                                     if (err) {
                                         //error de conexion o para crear la categoría
                                         res.send({status: 0, data: err});
@@ -2637,7 +2637,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
         router.post('/get-enterprise-users', auth.verifyToken, async function(req, res, next){
             try{
                 let {id_enterprise} = req.body;
-                const sql = `SELECT u.email, u.thumbnail, u.state AS verified_state,
+                const sql = `SELECT u.id AS id_user, id_enterprise, u.email, u.thumbnail, u.state AS verified_state,
                             (SELECT e.id FROM employee AS e WHERE e.id_user = u.id) AS id_employee, 
                             (SELECT e.name FROM employee AS e WHERE e.id_user = u.id) AS name_employee, 
                             (SELECT r.name_role FROM employee AS e INNER JOIN role AS r ON e.role = r.id WHERE e.id_user = u.id) AS role,
@@ -2680,6 +2680,28 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 });
             } catch(error){
                 //error de conexión
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
+        //Devuelve un listado de los roles
+        router.post('/get-roles', auth.verifyToken, async function(req, res, next){
+            try {
+                let {id_enterprise} = req.body;
+                const _sql = `SELECT * FROM role WHERE id_enterprise = ?`;
+                connection.con.query(_sql, id_enterprise, (err, result, fields) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        if(result.length){
+                            res.send({status: 1, data: result});
+                        } else{
+                            res.send({status: 1, data: ''});
+                        }
+                    }
+                });
+            } catch (error) {
                 res.send({status: 0, error: error});
             }
             connection.con.end;

@@ -1657,6 +1657,31 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+            //Devuelve el valor del stock completo
+            router.post('/get-total-stock', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT FORMAT(SUM(p.sale_price), 2) AS response
+                                FROM product as p 
+                                WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
             // Devuelve el número total de productos por id_enterprise para paginador
             router.post('/get-count-products', auth.verifyToken, async function(req, res, next){
                 try{
@@ -2762,6 +2787,21 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 });
             } catch(error){
                 //error de conexión
+                res.send({status: 0, error: error});
+            }
+            connection.con.end;
+        });
+
+        //Actualiza el rol de un usuario
+        router.post('/update-user-role', auth.verifyToken, async function(req, res, next){
+            try {
+                let {id, role} = req.body;
+                const _sql = `UPDATE employee SET role=? WHERE id_user = ?`;
+                connection.con.query(_sql, [role, id], (err, result, fields) => {
+                    if (err) res.send({status: 0, data: err});
+                    res.send({status: 1, data: result});
+                });
+            } catch (error) {
                 res.send({status: 0, error: error});
             }
             connection.con.end;

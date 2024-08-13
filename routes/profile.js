@@ -834,6 +834,36 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+            //Devuelve el listado de filtros
+            router.post('/get-filters', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT 
+                                    filter_name, 
+                                    GROUP_CONCAT(filter_value ORDER BY filter_value SEPARATOR ',') AS filter_values
+                                FROM 
+                                    filters
+                                WHERE ID_ENTERPRISE = 2
+                                GROUP BY 
+                                    filter_name;`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
 
         // Facturación
             // Devuelve el número total de facturas por id para paginador

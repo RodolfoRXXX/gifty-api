@@ -516,13 +516,57 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Actualiza el campo de clasificación 2
-            router.post('/update-enterprise-option2', auth.verifyToken, async function(req, res, next){
+            // Actualiza el campo de nombre de filtro
+            router.post('/update-filter-name', auth.verifyToken, async function(req, res, next){
                 try {
-                    let {id, name} = req.body;
+                    let {id_enterprise, filter_name, filter_value, last_filter_name} = req.body;
+                    let sql;
+                    let arr;
 
-                    const sql = `UPDATE enterprise SET name_option2 = ? WHERE id = ?`;
-                    connection.con.query(sql, [name, id], (err, result, field) => {
+                    if(last_filter_name != '') {
+                        //Actualiza a un valor existente
+                        sql = `UPDATE filters
+                                SET filter_name = ?
+                                WHERE filter_name = ? AND id_enterprise = ?;`;
+                        arr = [filter_name, last_filter_name, id_enterprise];
+                    } else {
+                        //Crea un valor nuevo
+                        sql = `INSERT INTO filters(id_enterprise, filter_name, filter_value) VALUES (?, ?, ?)`;
+                        arr = [id_enterprise, filter_name, filter_value];
+                    }
+                    connection.con.query(sql, arr, (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Actualiza el campo de valor de filtro
+            router.post('/update-filter-value', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id_enterprise, filter_name, filter_value, last_filter_value} = req.body;
+                    let sql;
+                    let arr;
+
+                    if(last_filter_value != '') {
+                        //Actualiza un valor existente
+                        sql = `UPDATE filters
+                                SET filter_value = ?
+                                WHERE filter_name = ? AND filter_value = ? AND id_enterprise = ?;`;
+                        arr = [filter_value, filter_name, last_filter_value, id_enterprise];
+                    } else {
+                        //Crea un nuevo valor
+                        sql = `INSERT INTO filters(id_enterprise, filter_name, filter_value) VALUES (?, ?, ?)`;
+                        arr = [id_enterprise, filter_name, filter_value];
+                    }
+
+                    connection.con.query(sql, arr, (err, result, field) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {

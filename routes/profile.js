@@ -1832,45 +1832,16 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Devuelve un producto por id_enterprise, name, id_option_1, id_option_2
+            // Devuelve un producto por id_product
             router.post('/get-product-detail', auth.verifyToken, async function(req, res, next){
                 try{
-                    let {id_enterprise, name, id_option_1, id_option_2} = req.body;
-                    const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color , s.name AS storage_name, prov.name AS provider_name, t1.name AS option_1_name, t2.name AS option_2_name 
+                    let {id_product} = req.body;
+                    const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color , s.name AS storage_name, prov.name AS provider_name 
                                 FROM product AS p INNER JOIN categories AS c ON p.category = c.id 
                                 INNER JOIN storage AS s ON p.storage_location = s.id 
                                 INNER JOIN provider AS prov ON p.provider = prov.id
-                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id 
-                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id  
-                                WHERE p.id_enterprise = ? AND p.name = ? AND p.id_option_1 = ? AND p.id_option_2 = ?`;
-                    connection.con.query(sql, [id_enterprise, name, id_option_1, id_option_2], (err, result, fields) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            if(result.length){
-                                res.send({status: 1, data: result});
-                            } else{
-                                res.send({status: 1, data: ''});
-                            }
-                        }
-                    });
-                } catch(error){
-                    //error de conexión
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
-            // Devuelve las variantes de opciones del mismo producto
-            router.post('/get-product-variants', auth.verifyToken, async function(req, res, next){
-                try{
-                    let {id_enterprise, name} = req.body;
-                    const sql = `SELECT p.*,  t1.name AS option_1_name, t2.name AS option_2_name
-                                FROM product AS p 
-                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id 
-                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
-                                WHERE p.id_enterprise = ? AND p.name = ?`;
-                    connection.con.query(sql, [id_enterprise, name], (err, result, fields) => {
+                                WHERE p.id = ?`;
+                    connection.con.query(sql, id_product, (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {

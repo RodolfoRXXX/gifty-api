@@ -546,6 +546,32 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+            //Devuelve el listado de filtros (PUEDE QUE REEMPLACE A LA FUNCIÓN DE ARRIBA)
+            router.post('/get-filters-obj', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT filter_name, CONCAT('[', GROUP_CONCAT( JSON_OBJECT('id', id, 'value', filter_value) 
+                                    ORDER BY filter_value SEPARATOR ', ' ), ']') AS filter_values 
+                                FROM filters 
+                                GROUP BY filter_name`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
             // Actualiza el campo de nombre de filtro
             router.post('/update-filter-name', auth.verifyToken, async function(req, res, next){
                 try {
@@ -1888,45 +1914,14 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Devuelve la cantidad de un mismo producto pero para diferentes valores del campo "id_option_1" (DEPRECATED en product-detail)
-            router.post('/get-product-detail-option1', auth.verifyToken, async function(req, res, next){
+            // Devuelve los productos que tengan el índice pasado obtenido desde los ids de filters
+            router.post('/get-product-filter-id', auth.verifyToken, async function(req, res, next){
                 try{
-                    let {name, id_enterprise} = req.body;
-                    const sql = `SELECT p.id_option_1 AS id_option, t1.name AS option, SUM(p.stock_real) AS stock 
-                                FROM product AS p 
-                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id 
-                                WHERE p.name = ? AND p.id_enterprise = ? 
-                                GROUP BY p.id_option_1 
-                                HAVING COUNT(DISTINCT p.id_option_1) > 0;`;
-                    connection.con.query(sql, [name, id_enterprise], (err, result, fields) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            if(result.length){
-                                res.send({status: 1, data: result});
-                            } else{
-                                res.send({status: 1, data: ''});
-                            }
-                        }
-                    });
-                } catch(error){
-                    //error de conexión
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
-            // Devuelve la cantidad de un mismo producto pero para diferentes valores del campo "id_option_2" (DEPRECATED en product-detail)
-            router.post('/get-product-detail-option2', auth.verifyToken, async function(req, res, next){
-                try{
-                    let {name, id_enterprise} = req.body;
-                    const sql = `SELECT p.id_option_2 AS id_option, t2.name AS option, SUM(p.stock_real) AS stock 
-                                FROM product AS p 
-                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
-                                WHERE p.name = ? AND p.id_enterprise = ? 
-                                GROUP BY p.id_option_2 
-                                HAVING COUNT(DISTINCT p.id_option_2) > 0;`;
-                    connection.con.query(sql, [name, id_enterprise], (err, result, fields) => {
+                    let {id_enterprise, id_filter} = req.body;
+                    const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color 
+                                FROM product AS p INNER JOIN categories AS c ON p.category = c.id 
+                                WHERE FIND_IN_SET(?, filters) > 0 AND p.id_enterprise = ?`;
+                    connection.con.query(sql, [id_filter, id_enterprise], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {

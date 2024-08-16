@@ -1785,8 +1785,28 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             // Devuelve el número total de productos por id_enterprise para paginador
             router.post('/get-count-products', auth.verifyToken, async function(req, res, next){
                 try{
-                    let {id_enterprise} = req.body;
-                    const sql = `SELECT COUNT(*) as total FROM product WHERE id_enterprise = ?`;
+                    //debo sumarle los filtros
+                    //search -> name
+                    //category -> category
+                    //stock -> stock_real > 0
+                    //state -> state = 1
+                    //filters -> filters, busca si el numero pasado o varios numeros estan incluídos
+                    let {id_enterprise, search, category, is_stock, state, filters} = req.body;
+                    let search_var = (search)?`AND name LIKE "%${search}%"`:'';
+                    let category_var = (category)?`AND category = ${category}`:'';
+                    let is_stock_var = (is_stock)?`AND is_stock = "${is_stock}"`:'';
+                    let state_var = (state)?`AND state = "${state}"`:'';
+                    let filters_var = '';
+                    if(filters) {
+                        let arr = filters.split(',');
+                        for (let index = 0; index < arr.length; index++) {
+                            filters_var += `AND FIND_IN_SET(${arr[index]}, filters) > 0 `
+                        }
+                    }
+                    const sql = `SELECT COUNT(*) as total 
+                                FROM product 
+                                WHERE id_enterprise = ? 
+                                ${search_var} ${category_var} ${is_stock_var} ${state_var} ${filters_var}`;
                     connection.con.query(sql, id_enterprise, (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
@@ -1808,13 +1828,23 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             // Devuelve una lista de productos de la empresa(id_enterprise)
             router.post('/get-products', auth.verifyToken, async function(req, res, next){
                 try{
-                    let {id_enterprise, page, size} = req.body;
+                    let {id_enterprise, search, category, is_stock, state, filters, page, size} = req.body;
+                    let search_var = (search)?`AND p.name LIKE "%${search}%"`:'';
+                    let category_var = (category)?`AND p.category = ${category}`:'';
+                    let is_stock_var = (is_stock)?`AND p.is_stock = "${is_stock}"`:'';
+                    let state_var = (state)?`AND p.state = "${state}"`:'';
+                    let filters_var = '';
+                    if(filters) {
+                        let arr = filters.split(',');
+                        for (let index = 0; index < arr.length; index++) {
+                            filters_var += `AND FIND_IN_SET(${arr[index]}, filters) > 0 `
+                        }
+                    }
                     const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color 
                                 FROM product AS p INNER JOIN categories AS c ON p.category = c.id 
                                 WHERE p.id_enterprise = ?
-                                LIMIT ? 
-                                OFFSET ?`;
-                    connection.con.query(sql, [id_enterprise, size, size*page], (err, result, fields) => {
+                                ${search_var} ${category_var} ${is_stock_var} ${state_var} ${filters_var}`;
+                    connection.con.query(sql, [id_enterprise, size*page], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {
@@ -1897,31 +1927,6 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                                 INNER JOIN provider AS prov ON p.provider = prov.id 
                                 WHERE p.id = ?`;
                     connection.con.query(sql, id_product, (err, result, fields) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            if(result.length){
-                                res.send({status: 1, data: result});
-                            } else{
-                                res.send({status: 1, data: ''});
-                            }
-                        }
-                    });
-                } catch(error){
-                    //error de conexión
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
-            // Devuelve los productos que tengan el índice pasado obtenido desde los ids de filters
-            router.post('/get-product-filter-id', auth.verifyToken, async function(req, res, next){
-                try{
-                    let {id_enterprise, id_filter} = req.body;
-                    const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color 
-                                FROM product AS p INNER JOIN categories AS c ON p.category = c.id 
-                                WHERE FIND_IN_SET(?, filters) > 0 AND p.id_enterprise = ?`;
-                    connection.con.query(sql, [id_filter, id_enterprise], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {

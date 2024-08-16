@@ -1892,11 +1892,15 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             router.post('/get-product-detail', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_product} = req.body;
-                    const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color , s.name AS storage_name, prov.name AS provider_name 
-                                FROM product AS p INNER JOIN categories AS c ON p.category = c.id 
+                    const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color, s.name AS storage_name, prov.name AS provider_name, 
+                                GROUP_CONCAT(f.filter_value) AS filter_values 
+                                FROM product AS p 
+                                INNER JOIN categories AS c ON p.category = c.id 
                                 INNER JOIN storage AS s ON p.storage_location = s.id 
-                                INNER JOIN provider AS prov ON p.provider = prov.id
-                                WHERE p.id = ?`;
+                                INNER JOIN provider AS prov ON p.provider = prov.id 
+                                LEFT JOIN filters AS f ON FIND_IN_SET(f.id, p.filters) > 0 
+                                WHERE p.id = ? 
+                                GROUP BY p.id, c.name, c.color_badge, s.name, prov.name;`;
                     connection.con.query(sql, id_product, (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
@@ -1915,7 +1919,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Devuelve un producto por ID solamente
+            // Devuelve un producto por ID solamente(seguro esta función es llamada desde orders)
             router.post('/get-product-detail-by-id', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_product} = req.body;

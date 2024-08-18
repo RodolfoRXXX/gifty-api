@@ -525,7 +525,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                                     GROUP_CONCAT(filter_value ORDER BY filter_value SEPARATOR ',') AS filter_values
                                 FROM 
                                     filters
-                                WHERE ID_ENTERPRISE = 2
+                                WHERE ID_ENTERPRISE = ?
                                 GROUP BY 
                                     filter_name;`;
                     connection.con.query(sql, id_enterprise, (err, result, fields) => {
@@ -546,13 +546,14 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            //Devuelve el listado de filtros (PUEDE QUE REEMPLACE A LA FUNCIÓN DE ARRIBA)
+            //Devuelve el listado de filtros (PUEDE QUE REEMPLACE A LA FUNCIÓN DE ARRIBA) NO FILTRA POR ID_ENTERPRISE
             router.post('/get-filters-obj', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_enterprise} = req.body;
                     const sql = `SELECT filter_name, CONCAT('[', GROUP_CONCAT( JSON_OBJECT('id', id, 'value', filter_value) 
                                     ORDER BY filter_value SEPARATOR ', ' ), ']') AS filter_values 
                                 FROM filters 
+                                WHERE ID_ENTERPRISE = ?
                                 GROUP BY filter_name`;
                     connection.con.query(sql, id_enterprise, (err, result, fields) => {
                         if (err) {
@@ -2017,11 +2018,11 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 //Crea un producto nuevo pero solo la parte de información básica de producto
                 router.post('/create-product', auth.verifyToken, async function(req, res, next){
                     try {
-                        let {id_enterprise, name, description, category, id_option_1, id_option_2, sku } = req.body;
+                        let {id_enterprise, name, description, category, filters, sku } = req.body;
 
-                        const sql = `INSERT INTO product(id_enterprise, image, name, description, category, id_option_1, id_option_2, sku, stock_real, is_stock, stock_available, storage_location, sale_price, purchase_price, provider, purchase_date, sale_date, state) 
-                                    VALUES (?,'no-image.png',?,?,?,?,?,?,0 ,'sin stock',0,1,0.00,0.00,1,'','','inactivo')`;
-                        connection.con.query(sql, [id_enterprise, name, description, category, id_option_1, id_option_2, sku], (err, result, field) => {
+                        const sql = `INSERT INTO product(id_enterprise, image, name, description, category, filters, sku, stock_real, is_stock, stock_available, storage_location, sale_price, purchase_price, provider, purchase_date, sale_date, state) 
+                                    VALUES (?,'no-image.png',?,?,?,?,?,?,0,'sin stock,0,1,0.00,0.00,1,'','','inactivo')`;
+                        connection.con.query(sql, [id_enterprise, name, description, category, filters.join(','), sku], (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
                             } else {
@@ -2037,11 +2038,11 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 //Edita un producto, pero los campos de información básica
                 router.post('/edit-product-information', auth.verifyToken, async function(req, res, next){
                     try {
-                        let {name, description, category, id_option_1, id_option_2, sku, id, id_enterprise} = req.body;
+                        let {name, description, category, filters, sku, id, id_enterprise} = req.body;
 
                         const sql = `UPDATE product AS p 
-                                    SET name=?,description=?,category=?,id_option_1=?,id_option_2=?,sku=? WHERE p.id = ?`;
-                        connection.con.query(sql, [name, description, category, id_option_1, id_option_2, sku, id], (err, result, field) => {
+                                    SET name=?,description=?,category=?,filters=?,sku=? WHERE p.id = ?`;
+                        connection.con.query(sql, [name, description, category, filters.join(','), sku, id], (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
                             } else {

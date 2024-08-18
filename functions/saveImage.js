@@ -1,36 +1,45 @@
-const fs = require("fs");
+const fs = require("fs").promises; // Usar la versión de promesas de fs
 const Jimp = require("jimp");
-//id, image
 
-// imagen, id, id_autor, tabla
-async function save_image(id, table, type, image, width, height, prev_thumb){
+// imagen, id, tabla, type, image, width, height, prev_thumb
+async function save_image(id, table, type, image, width, height, prev_thumb) {
     try {
-        let base64Image = image.split(';base64,').pop();
-        let name_image = id + '-' + table + '-' + type;
-        name_image = name_image + '.' + (image.split(';base64,')[0]).split('/')[1]
-        let route = './public/uploads/' + prev_thumb;
+        // Extraer la extensión de la imagen
+        const [metaData, base64Image] = image.split(';base64,');
+        const extension = metaData.split('/')[1];
 
-        //Verifica si la imagen anterior es la no-image.png
-        //Si es, no elimina su ubicación
-        if(prev_thumb !== 'no-image.png') {
-            //Busca el archivo existente y lo elimina
-            if(fs.existsSync(route)) {
-                fs.unlink(route, (err) => {
-                    if(err) {
-                        throw 'error'
-                    }
-                });
-            }
+        // Generar el nombre y ruta de la nueva imagen
+        const name_image = `${id}-${table}-${type}.${extension}`;
+        const route = `./public/uploads/${name_image}`;
+
+        // Ruta de la imagen anterior
+        const prev_route = `./public/uploads/${prev_thumb}`;
+
+        // Verificar y eliminar la imagen anterior si no es "no-image.png"
+        if (prev_thumb !== 'no-image.png' && await fileExists(prev_route)) {
+            await fs.unlink(prev_route);
         }
-            //Si no es
-            let buff = Buffer.from(base64Image, 'base64');     
-            const image_def = await Jimp.read(buff);
-                                await image_def.cover(width, height, Jimp.HORIZONTAL_ALIGN_CENTER | Jimp.VERTICAL_ALIGN_MIDDLE);
-                                await image_def.quality(95);
-                                await image_def.writeAsync(route);
-            return name_image
+
+        // Procesar la nueva imagen
+        const imageBuffer = Buffer.from(base64Image, 'base64');
+        const image_def = await Jimp.read(imageBuffer);
+        await image_def.cover(width, height, Jimp.HORIZONTAL_ALIGN_CENTER | Jimp.VERTICAL_ALIGN_MIDDLE);
+        await image_def.quality(95).writeAsync(route);
+
+        return name_image;
     } catch (error) {
+        console.error("Error saving image:", error);
         return error;
+    }
+}
+
+// Verificar si un archivo existe
+async function fileExists(path) {
+    try {
+        await fs.access(path);
+        return true;
+    } catch {
+        return false;
     }
 }
 

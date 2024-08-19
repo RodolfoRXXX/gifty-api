@@ -490,13 +490,13 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     let {id_enterprise, date_limit} = req.body;
                     const sql = `SELECT *
                                 FROM (
-                                    SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                    SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.stock_real > 0 AND p.id_enterprise = ?
                                     UNION
-                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.stock_real > 0 AND p.id_enterprise = ?
                                     UNION
-                                    SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.is_stock = 'sin stock' AND p.id_enterprise = ?
+                                    SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.stock_real > 0 AND p.id_enterprise = ?
                                     UNION
-                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.stock_real > 0 AND p.id_enterprise = ?
                                 ) AS results`;
                     connection.con.query(sql, [id_enterprise, id_enterprise, date_limit, id_enterprise, date_limit, id_enterprise], (err, result, fields) => {
                         if (err) {
@@ -1624,13 +1624,13 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     let {id_enterprise, date_limit} = req.body;
                     const sql = `SELECT *
                                 FROM (
-                                    SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                    SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.stock_real > 0 AND p.id_enterprise = ?
                                     UNION
-                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.stock_real > 0 AND p.id_enterprise = ?
                                     UNION
-                                    SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.is_stock = 'sin stock' AND p.id_enterprise = ?
+                                    SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.stock_real > 0 AND p.id_enterprise = ?
                                     UNION
-                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.is_stock = 'con stock' AND p.id_enterprise = ?
+                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.stock_real > 0 AND p.id_enterprise = ?
                                 ) AS results`;
                     connection.con.query(sql, [id_enterprise, id_enterprise, date_limit, id_enterprise, date_limit, id_enterprise], (err, result, fields) => {
                         if (err) {
@@ -1656,7 +1656,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     let {id_enterprise} = req.body;
                     const sql = `SELECT FORMAT(SUM(p.sale_price), 2) AS response
                                 FROM product as p 
-                                WHERE p.is_stock = 'con stock' AND p.id_enterprise = ?`;
+                                WHERE p.stock_real > 0 AND p.id_enterprise = ?`;
                     connection.con.query(sql, id_enterprise, (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
@@ -1687,7 +1687,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     let {id_enterprise, search, category, is_stock, state, filters} = req.body;
                     let search_var = (search)?`AND name LIKE "%${search}%"`:'';
                     let category_var = (category)?`AND category = ${category}`:'';
-                    let is_stock_var = (is_stock)?`AND is_stock = "${is_stock}"`:'';
+                    let is_stock_var = (is_stock)?((is_stock == 'Con stock')?'AND stock_real > 0':'AND stock_real = 0'):'';
                     let state_var = (state)?`AND state = "${state}"`:'';
                     let filters_var = '';
                     if(filters) {
@@ -1724,7 +1724,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     let {id_enterprise, search, category, is_stock, state, filters, page, size} = req.body;
                     let search_var = (search)?`AND p.name LIKE "%${search}%"`:'';
                     let category_var = (category)?`AND p.category = ${category}`:'';
-                    let is_stock_var = (is_stock)?`AND p.is_stock = "${is_stock}"`:'';
+                    let is_stock_var = (is_stock)?((is_stock == 'Con stock')?'AND stock_real > 0':'AND stock_real = 0'):'';
                     let state_var = (state)?`AND p.state = "${state}"`:'';
                     let filters_var = '';
                     if(filters) {
@@ -1869,8 +1869,8 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     try {
                         let {id_enterprise, name, description, category, sku } = req.body;
 
-                        const sql = `INSERT INTO product(id_enterprise, image, name, description, category, sku, stock_real, is_stock, stock_available, storage_location, sale_price, purchase_price, provider, purchase_date, sale_date, state) 
-                                    VALUES (?,'no-image.png',?,?,?,?,0,'sin stock,0,1,0.00,0.00,1,'','','inactivo')`;
+                        const sql = `INSERT INTO product(id_enterprise, image, name, description, category, sku, stock_real, stock_available, storage_location, sale_price, purchase_price, provider, purchase_date, sale_date, state) 
+                                    VALUES (?,'no-image.png',?,?,?,?,0,0,1,0.00,0.00,1,'','','inactivo')`;
                         connection.con.query(sql, [id_enterprise, name, description, category, sku], (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
@@ -1963,14 +1963,14 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     connection.con.end;
                 });
 
-                //Edita un producto, pero los campos de stock_real, stock_available y is_stock
+                //Edita un producto, pero los campos de stock_real, stock_available
                 router.post('/edit-product-stock', auth.verifyToken, async function(req, res, next){
                     try {
-                        let {id, stock_real, is_stock, stock_available} = req.body;
+                        let {id, stock_real, stock_available} = req.body;
 
                         const sql = `UPDATE product AS p 
-                                    SET stock_real=?, is_stock=?, stock_available=? WHERE p.id = ?`;
-                        connection.con.query(sql, [stock_real, is_stock, stock_available, id], (err, result, field) => {
+                                    SET stock_real=?, stock_available=? WHERE p.id = ?`;
+                        connection.con.query(sql, [stock_real, stock_available, id], (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
                             } else {
@@ -2271,9 +2271,9 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 try{
                     let {id_enterprise, id_storage} = req.body;
                     const sql = `SELECT * FROM ( 
-                                SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.storage_location = ? AND p.id_enterprise = ? 
+                                SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.stock_real > 0 AND p.storage_location = ? AND p.id_enterprise = ? 
                                 UNION 
-                                SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.storage_location = ? AND p.id_enterprise = ? ) 
+                                SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.stock_real > 0 AND p.storage_location = ? AND p.id_enterprise = ? ) 
                                 AS results`;
                     connection.con.query(sql, [id_storage, id_enterprise, id_storage, id_enterprise], (err, result, fields) => {
                         if (err) {
@@ -2503,11 +2503,11 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 try{
                     let {id_enterprise, id_provider} = req.body;
                     const sql = `SELECT * FROM ( 
-                                SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.is_stock = 'con stock' AND p.provider = ? AND p.id_enterprise = ? 
+                                SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.stock_real > 0 AND p.provider = ? AND p.id_enterprise = ? 
                                 UNION 
-                                SELECT FORMAT(SUM(p.purchase_price), 2) FROM product as p WHERE p.is_stock = 'con stock' AND p.provider = ? AND p.id_enterprise = ? 
+                                SELECT FORMAT(SUM(p.purchase_price), 2) FROM product as p WHERE p.stock_real > 0 AND p.provider = ? AND p.id_enterprise = ? 
                                 UNION 
-                                SELECT MAX(STR_TO_DATE(purchase_date, '%Y-%m-%d')) FROM product AS p WHERE p.is_stock = 'con stock' AND p.provider = ? AND p.id_enterprise = ?
+                                SELECT MAX(STR_TO_DATE(purchase_date, '%Y-%m-%d')) FROM product AS p WHERE p.stock_real > 0 AND p.provider = ? AND p.id_enterprise = ?
                                 ) AS results`;
                     connection.con.query(sql, [id_provider, id_enterprise, id_provider, id_enterprise, id_provider, id_enterprise], (err, result, fields) => {
                         if (err) {

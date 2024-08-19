@@ -2016,11 +2016,11 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 //Crea un producto nuevo pero solo la parte de información básica de producto
                 router.post('/create-product', auth.verifyToken, async function(req, res, next){
                     try {
-                        let {id_enterprise, name, description, category, filters, sku } = req.body;
+                        let {id_enterprise, name, description, category, sku } = req.body;
 
-                        const sql = `INSERT INTO product(id_enterprise, image, name, description, category, filters, sku, stock_real, is_stock, stock_available, storage_location, sale_price, purchase_price, provider, purchase_date, sale_date, state) 
-                                    VALUES (?,'no-image.png',?,?,?,?,?,?,0,'sin stock,0,1,0.00,0.00,1,'','','inactivo')`;
-                        connection.con.query(sql, [id_enterprise, name, description, category, filters.join(','), sku], (err, result, field) => {
+                        const sql = `INSERT INTO product(id_enterprise, image, name, description, category, sku, stock_real, is_stock, stock_available, storage_location, sale_price, purchase_price, provider, purchase_date, sale_date, state) 
+                                    VALUES (?,'no-image.png',?,?,?,?,0,'sin stock,0,1,0.00,0.00,1,'','','inactivo')`;
+                        connection.con.query(sql, [id_enterprise, name, description, category, sku], (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
                             } else {
@@ -2036,11 +2036,11 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 //Edita un producto, pero los campos de información básica
                 router.post('/edit-product-information', auth.verifyToken, async function(req, res, next){
                     try {
-                        let {name, description, category, filters, sku, id, id_enterprise} = req.body;
+                        let {name, description, category, sku, id, id_enterprise} = req.body;
 
                         const sql = `UPDATE product AS p 
-                                    SET name=?,description=?,category=?,filters=?,sku=? WHERE p.id = ?`;
-                        connection.con.query(sql, [name, description, category, filters.join(','), sku, id], (err, result, field) => {
+                                    SET name=?,description=?,category=?,sku=? WHERE p.id = ?`;
+                        connection.con.query(sql, [name, description, category, sku, id], (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
                             } else {
@@ -2140,6 +2140,26 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                         const sql = `UPDATE product AS p 
                                     SET sale_price=? WHERE p.id = ?`;
                         connection.con.query(sql, [sale_price, id], (err, result, field) => {
+                            if (err) {
+                                res.send({status: 0, data: err});
+                            } else {
+                                res.send({status: 1, data: result})
+                            }
+                        })
+                    } catch (error) {
+                        res.send({status: 0, error: error});
+                    }
+                    connection.con.end;
+                });
+
+                //Edita un producto, pero solo el campo filters para filtros adicionales
+                router.post('/edit-product-filters', auth.verifyToken, async function(req, res, next){
+                    try {
+                        let {id, filters} = req.body;
+
+                        const sql = `UPDATE product AS p 
+                                    SET filters=? WHERE p.id = ?`;
+                        connection.con.query(sql, [filters.join(','), id], (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
                             } else {

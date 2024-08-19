@@ -636,112 +636,6 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Devuelve el listado de las opciones 1 (Color)
-            router.post('/get-option1', auth.verifyToken, async function(req, res, next){
-                try{
-                    let {id_enterprise} = req.body;
-                    const sql = `SELECT * FROM table_option_1 WHERE id_enterprise = ?`;
-                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            if(result.length){
-                                res.send({status: 1, data: result});
-                            } else{
-                                res.send({status: 1, data: ''});
-                            }
-                        }
-                    });
-                } catch(error){
-                    //error de conexión
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
-            // Devuelve el listado de las opciones 2 (Medida)
-            router.post('/get-option2', auth.verifyToken, async function(req, res, next){
-                try{
-                    let {id_enterprise} = req.body;
-                    const sql = `SELECT * FROM table_option_2 WHERE id_enterprise = ?`;
-                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            if(result.length){
-                                res.send({status: 1, data: result});
-                            } else{
-                                res.send({status: 1, data: ''});
-                            }
-                        }
-                    });
-                } catch(error){
-                    //error de conexión
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
-            // Actualiza el campo de clasificación 1
-            router.post('/update-enterprise-tableOption1', auth.verifyToken, async function(req, res, next){
-                try {
-                    let {id, id_enterprise, name} = req.body;
-                    let sql;
-                    let arr;
-
-                    if(id == 0) {
-                        //Creando un nuevo valor
-                        sql = `INSERT INTO table_option_1 (id_enterprise, name) VALUES (?, ?)`;
-                        arr = [id_enterprise, name];
-                    } else {
-                        //Editando un valor
-                        sql = `UPDATE table_option_1 SET name = ? WHERE id = ?`;
-                        arr = [name, id];
-                    }
-
-                    connection.con.query(sql, arr, (err, result, field) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            res.send({status: 1, data: result})
-                        }
-                    })
-                } catch (error) {
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
-            // Actualiza el campo de clasificación 2
-            router.post('/update-enterprise-tableOption2', auth.verifyToken, async function(req, res, next){
-                try {
-                    let {id, id_enterprise, name} = req.body;
-                    let sql;
-                    let arr;
-
-                    if(id == 0) {
-                        //Creando un nuevo valor
-                        sql = `INSERT INTO table_option_2 (id_enterprise, name) VALUES (?, ?)`;
-                        arr = [id_enterprise, name];
-                    } else {
-                        //Editando un valor
-                        sql = `UPDATE table_option_2 SET name = ? WHERE id = ?`;
-                        arr = [name, id];
-                    }
-
-                    connection.con.query(sql, arr, (err, result, field) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            res.send({status: 1, data: result})
-                        }
-                    })
-                } catch (error) {
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
         // Configuración - Data
             //Crear empleado nuevo
             router.post('/create-employee', auth.verifyToken, async function(req, res, next){
@@ -1887,7 +1781,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Devuelve un producto por id_product
+            // Devuelve un producto por id_product(devuelve los filtros como un array de nombres)
             router.post('/get-product-detail', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_product} = req.body;
@@ -1918,14 +1812,12 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Devuelve un producto por ID solamente(seguro esta función es llamada desde orders)(LO SAQUE DE ORDERS, USO LA DE ARRIBA)
+            // Devuelve un producto por ID solamente(devuelve los filtros como una cadena de string)
             router.post('/get-product-detail-by-id', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_product} = req.body;
-                    const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color, s.name AS storage_name, prov.name AS provider_name, t1.name AS option_1_name, t2.name AS option_2_name 
+                    const sql = `SELECT p.*, c.name AS category_item, c.color_badge AS category_color, s.name AS storage_name, prov.name AS provider_name
                                 FROM product AS p INNER JOIN categories AS c ON p.category = c.id
-                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id 
-                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
                                 INNER JOIN storage AS s ON p.storage_location = s.id 
                                 INNER JOIN provider AS prov ON p.provider = prov.id 
                                 WHERE p.id = ?`;
@@ -1953,47 +1845,6 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     let {id_enterprise, sku} = req.body;
                     const sql = `SELECT * FROM product AS p WHERE p.id_enterprise = ? AND p.sku = ?`;
                     connection.con.query(sql, [id_enterprise, sku], (err, result, fields) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            if(result.length){
-                                res.send({status: 1, data: result});
-                            } else{
-                                res.send({status: 1, data: ''});
-                            }
-                        }
-                    });
-                } catch(error){
-                    //error de conexión
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
-            // Devuelve un producto por ID o un conjunto por nombre
-            router.post('/get-product-id-name', auth.verifyToken, async function(req, res, next){
-                try{
-                    let {id_product, name, id_enterprise} = req.body;
-                    let sql;
-                    let arr;
-                    if(id_product > 0) {
-                        //busca por ID
-                        sql = `SELECT p.name, p.description, p.image, t1.name AS option_1, t2.name AS option_2 
-                                FROM product AS p 
-                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id 
-                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
-                                WHERE p.id = ?`;
-                                arr = [id_product];
-                    } else if(name.length > 0) {
-                        //Busca por name
-                        sql = `SELECT p.name, p.description, p.image, t1.name AS option_1, t2.name AS option_2 
-                                FROM product AS p 
-                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id 
-                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
-                                WHERE p.id_enterprise = ? AND p.name LIKE CONCAT('p', '%')`;
-                                arr = [id_enterprise, name];
-                    }
-                    connection.con.query(sql, arr, (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {

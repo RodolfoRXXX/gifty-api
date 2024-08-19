@@ -1316,10 +1316,8 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             router.post('/get-products-options', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_enterprise, text} = req.body;
-                    const sql = `SELECT p.id, p.name, p.description, p.image, p.sale_price, p.sku, p.state, p.stock_available, t1.name AS option_1_name, t2.name AS option_2_name 
+                    const sql = `SELECT p.*
                                 FROM product AS p
-                                INNER JOIN table_option_1 AS t1 ON p.id_option_1 = t1.id
-                                INNER JOIN table_option_2 AS t2 ON p.id_option_2 = t2.id 
                                 WHERE p.name LIKE ? AND p.id_enterprise = ?
                                 ORDER BY name`;
                     connection.con.query(sql, [`${text}%`, id_enterprise], (err, result, fields) => {
@@ -1920,7 +1918,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Devuelve un producto por ID solamente(seguro esta función es llamada desde orders)
+            // Devuelve un producto por ID solamente(seguro esta función es llamada desde orders)(LO SAQUE DE ORDERS, USO LA DE ARRIBA)
             router.post('/get-product-detail-by-id', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_product} = req.body;

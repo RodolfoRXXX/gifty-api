@@ -1156,11 +1156,13 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 try{
                     let {id_order} = req.body;
                     const sql = `SELECT o.*,
-                                e.name AS e_name, e.email AS e_email, e.address AS e_address, e.phone_1 as e_phone, e.cuit as e_cuit, e.city as e_city, e.state as e_state, e.country as e_country, e.cp as e_cp,
-                                c.name as c_name, c.email as c_email, c.phone as c_phone, c.mobile as c_mobile, c.address as c_address, c.city as c_city, c.state as c_state, c.country as c_country 
+                                e.name AS e_name, e.thumbnail AS e_thumbnail, e.email AS e_email, e.address AS e_address, e.phone_1 as e_phone, e.cuit as e_cuit, e.city as e_city, e.state as e_state, e.country as e_country, e.cp as e_cp,
+                                c.name as c_name, c.email as c_email, c.phone as c_phone, c.mobile as c_mobile, c.address as c_address, c.city as c_city, c.state as c_state, c.country as c_country,
+                                em.name AS em_name, em.email AS em_email
                                 FROM orders AS o 
                                 INNER JOIN enterprise AS e ON o.id_enterprise = e.id 
-                                INNER JOIN customer AS c ON o.customer = c.id 
+                                INNER JOIN customer AS c ON o.customer = c.id
+                                INNER JOIN employee AS em ON o.seller = em.id 
                                 WHERE o.id = ?`;
                     connection.con.query(sql, id_order, (err, result, fields) => {
                         if (err) {

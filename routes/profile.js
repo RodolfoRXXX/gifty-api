@@ -12,7 +12,7 @@ const connection = require('../settings/connection');
 const md5     = require('md5');
 const jwt     = require('jsonwebtoken');
 const save_image = require('../functions/saveImage');
-
+const generateNumber = require('../functions/generateNumber');
 
 /* ----------------------- POST --------------------------*/
 
@@ -1261,91 +1261,101 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             //Crea un remito nuevo y actualiza el stock de los productos
             router.post('/create-order-detail', auth.verifyToken, async function(req, res, next) {
                 const { form: { id_enterprise, customer, detail, shipment, observation, seller }, edit: editRegister } = req.body;
-              
+            
                 async function createOrderAndProducts(conect, id_enterprise, customer, detail, shipment, observation, seller, editRegister) {
-                    return new Promise((resolve, reject) => {
-                        
-                        let orderValues = [
+                    try {
+                        // Start the transaction
+                        await new Promise((resolve, reject) => {
+                            conect.beginTransaction(err => {
+                                if (err) return reject(err);
+                                resolve();
+                            });
+                        });
+            
+                        // Step 1: Get the last nroRemito
+                        const [lastRemitoResult] = await new Promise((resolve, reject) => {
+                            const getNro = `SELECT nroRemito 
+                                            FROM orders
+                                            WHERE id_enterprise = ? 
+                                            ORDER BY id 
+                                            DESC LIMIT 1;`;
+                            conect.query(getNro, id_enterprise, (err, results) => {
+                                if (err) return reject(err);
+                                resolve(results);
+                            });
+                        });
+            
+                        const nro = generateNumber(lastRemitoResult?.nroRemito || '');
+            
+                        // Step 2: Insert the new order
+                        const orderValues = [
                             id_enterprise,
+                            nro,
                             customer,
                             detail,
                             shipment,
                             observation,
                             seller
                         ];
-
-                        let orderQuery = `INSERT INTO orders
-                                            (id_enterprise, date, customer, detail, shipment, observation, seller, status) 
-                                            VALUES (?, CURDATE(), ?, ?, ?, ?, ?, 1)`;
-              
-                        conect.query(orderQuery, orderValues, (err, results) => {
-                            if (err) {
-                                return conect.rollback(() => {
-                                    reject(err);
-                                });
-                            }
-                
-                            if (editRegister && editRegister.length > 0) {
-                            // Construir las consultas de actualización para la tabla "product"
-                            let productQueries = [];
-                            editRegister.forEach(product => {
-                                productQueries.push(
-                                new Promise((resolve, reject) => {
-                                    let productQuery = `UPDATE product SET stock_available = (stock_available - ?) WHERE id = ?`;
+            
+                        const insertResult = await new Promise((resolve, reject) => {
+                            const orderQuery = `INSERT INTO orders
+                                                (id_enterprise, nroRemito, date, customer, detail, shipment, observation, seller, status) 
+                                                VALUES (?,?, CURDATE(), ?, ?, ?, ?, ?, 1)`;
+                            conect.query(orderQuery, orderValues, (err, results) => {
+                                if (err) return reject(err);
+                                resolve(results);
+                            });
+                        });
+            
+                        const insertedOrderId = insertResult.insertId;
+            
+                        // Step 3: Update product stock if necessary
+                        if (editRegister && editRegister.length > 0) {
+                            await Promise.all(editRegister.map(product => {
+                                return new Promise((resolve, reject) => {
+                                    const productQuery = `UPDATE product SET stock_available = (stock_available - ?) WHERE id = ?`;
                                     conect.query(productQuery, [product.editQty, product.id_product], (err, results) => {
                                         if (err) return reject(err);
                                         resolve(results);
                                     });
-                                })
-                                );
+                                });
+                            }));
+                        }
+            
+                        // Commit the transaction
+                        await new Promise((resolve, reject) => {
+                            conect.commit(err => {
+                                if (err) return reject(err);
+                                resolve();
                             });
-                
-                            Promise.all(productQueries)
-                                .then(() => {
-                                    conect.commit(err => {
-                                        if (err) {
-                                            return conect.rollback(() => {
-                                                reject(err);
-                                            });
-                                        }
-                                        resolve(results);
-                                    });
-                                })
-                                .catch(err => {
-                                    conect.rollback(() => {
-                                        reject(err);
-                                    });
-                                });
-                            } else {
-                                conect.commit(err => {
-                                    if (err) {
-                                        return conect.rollback(() => {
-                                            reject(err);
-                                        });
-                                    }
-                                    resolve(results);
-                                });
-                            }
                         });
-                    });
+            
+                        return { orderId: insertedOrderId };
+                    } catch (error) {
+                        // Rollback the transaction in case of any error
+                        await new Promise((resolve, reject) => {
+                            conect.rollback(() => {
+                                reject(error);
+                            });
+                        });
+                    }
                 }
-              
-                connection.con.getConnection((err, conect) => {
-                  if (err) {
-                    res.send({status: 0, error: err});
-                    return;
-                  }
-              
-                  createOrderAndProducts(conect, id_enterprise, customer, detail, shipment, observation, seller, editRegister)
-                    .then( response  => {
-                      res.send({status: 1, data: response});
-                    })
-                    .catch(err => {
-                      res.send({status: 0, error: err});
-                    })
-                    .finally(() => {
-                      conect.release();
-                    });
+            
+                connection.con.getConnection(async (err, conect) => {
+                    if (err) {
+                        res.send({ status: 0, error: err });
+                        return;
+                    }
+            
+                    try {
+                        const response = await createOrderAndProducts(conect, id_enterprise, customer, detail, shipment, observation, seller, editRegister);
+                        res.send({ status: 1, data: response });
+                    } catch (error) {
+                        res.send({ status: 0, error: error.message });
+                    } finally {
+                        conect.release();
+                    }
                 });
             });
 

@@ -1052,6 +1052,63 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+            // Devuelve la información de las ventas totales por período seleccionado
+            router.post('/get-data-best-product', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, range} = req.body;
+                    const sql = `SELECT 
+                                    name,
+                                    sku,
+                                    SUM(amount) AS total_amount
+                                FROM (
+                                    SELECT 
+                                        CAST(JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].price'))) AS DECIMAL(10, 2)) AS amount,
+                                        JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].name'))) AS name,
+                                        JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].sku'))) AS sku
+                                    FROM orders
+                                    JOIN (
+                                        SELECT 0 AS i 
+                                        UNION ALL SELECT 1 
+                                        UNION ALL SELECT 2 
+                                        UNION ALL SELECT 3 
+                                        UNION ALL SELECT 4 
+                                        UNION ALL SELECT 5 
+                                        UNION ALL SELECT 6 
+                                        UNION ALL SELECT 7 
+                                        UNION ALL SELECT 8 
+                                        UNION ALL SELECT 9
+                                    ) AS idx 
+                                    ON JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) IS NOT NULL
+                                    WHERE id_enterprise = ?
+                                    AND JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) = '1'
+                                    AND date > CASE 
+                                                WHEN ? = '1M' THEN DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
+                                                WHEN ? = '6M' THEN DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+                                                WHEN ? = '12M' THEN DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                                            END
+                                ) AS subquery
+                                GROUP BY name, sku
+                                ORDER BY total_amount DESC
+                                LIMIT 5;
+                                `;
+                    connection.con.query(sql, [id_enterprise, range, range, range], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
 
         //Remitos/Pedidos
             // Devuelve datos específicos de la tabla pedidos

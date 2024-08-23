@@ -1154,12 +1154,22 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Devuelve el número total de pedidos por id_enterprise para paginador
+            //---------------------------------------------------------------------------------
+
+            // Devuelve el número total de productos por id_enterprise para paginador
             router.post('/get-count-orders', auth.verifyToken, async function(req, res, next){
                 try{
-                    let {id_enterprise, seller} = req.body;
+                    //seller = null => significa q el admin llama y el puede filtrar por sellerF
+                    //seller != null => significa que cualquier user llama y no puede filtrar
+                    let {id_enterprise, dateTime, sellerF, state, seller} = req.body;
+                    let dateTime_var = (dateTime)?`AND date = "${dateTime}"`:'';
+                    let sellerF_var = (sellerF)?`AND seller = ${sellerF}`:'';
+                    let state_var = (state != undefined)?`AND status = ${state}`:'';
                     let seller_filter = (seller)?`AND seller = ${seller}`:'';
-                    const sql = `SELECT COUNT(*) as total FROM orders WHERE id_enterprise = ? ${seller_filter}`;
+                    const sql = `SELECT COUNT(*) as total 
+                                FROM orders
+                                WHERE id_enterprise = ? 
+                                ${dateTime_var} ${sellerF_var} ${state_var} ${seller_filter}`;
                     connection.con.query(sql, id_enterprise, (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
@@ -1181,16 +1191,18 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             // Devuelve una lista de pedidos de la empresa(id_enterprise)
             router.post('/get-orders', auth.verifyToken, async function(req, res, next){
                 try{
-                    let {id_enterprise, page, size, seller} = req.body;
-                    let seller_filter = (seller)?`AND o.seller = ${seller}`:'';
+                    let {id_enterprise, dateTime, sellerF, state, page, size, seller} = req.body;
+                    let dateTime_var = (dateTime)?`AND o.date = "${dateTime}"`:'';
+                    let sellerF_var = (sellerF)?`AND o.seller = ${sellerF}`:'';
+                    let state_var = (state != undefined)?`AND o.status = ${state}`:'';
+                    let seller_filter = (seller)?`AND seller = ${seller}`:'';
                     const sql = `SELECT o.*, c.name AS customer_name, c.email AS customer_email, c.thumbnail AS customer_thumbnail, e.name AS employee_name
                                 FROM orders AS o 
                                 INNER JOIN customer AS c ON o.customer = c.id
                                 INNER JOIN employee AS e ON o.seller = e.id 
-                                WHERE o.id_enterprise = ? ${seller_filter}
-                                LIMIT ? 
-                                OFFSET ?`;
-                    connection.con.query(sql, [id_enterprise, size, size*page], (err, result, fields) => {
+                                WHERE o.id_enterprise = ?
+                                ${dateTime_var} ${sellerF_var} ${state_var} ${seller_filter}`;
+                    connection.con.query(sql, [id_enterprise, size*page], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {
@@ -1207,6 +1219,8 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 }
                 connection.con.end;
             });
+
+            //---------------------------------------------------------------------------------
 
             // Devuelve un remito por ID solamente
             router.post('/get-order-detail-by-id', auth.verifyToken, async function(req, res, next){

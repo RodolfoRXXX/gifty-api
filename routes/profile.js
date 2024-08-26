@@ -881,12 +881,14 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
 
 
         //Dashboard
-            // Devuelve el total de pedidos abiertos
-            router.post('/get-data-open-order', auth.verifyToken, async function(req, res, next){
+            // Devuelve el total de pedidos finalizados
+            router.post('/get-data-success-order', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_enterprise, date_limit, seller} = req.body;
                     let seller_filter = (seller)?`AND seller = ${seller}`:'';
-                    const sql = `SELECT COUNT(*) AS response FROM orders AS o WHERE o.id_enterprise = ? AND o.date > ? ${seller_filter}`;
+                    const sql = `SELECT COUNT(*) AS response 
+                                FROM orders AS o 
+                                    WHERE o.id_enterprise = ? AND o.date > ? AND status = 0 ${seller_filter}`;
                     connection.con.query(sql, [id_enterprise, date_limit], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
@@ -906,33 +908,13 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             });
 
             // Devuelve el total de productos pendientes de entrega
-            router.post('/get-data-pending-product', auth.verifyToken, async function(req, res, next){
+            router.post('/get-data-pending-order', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_enterprise, date_limit, seller} = req.body;
                     let seller_filter = (seller)?`AND seller = ${seller}`:'';
                     const sql = `SELECT COUNT(*) AS response 
-                                FROM (
-                                    SELECT JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) AS status_value 
-                                    FROM orders AS o
-                                    JOIN (
-                                        SELECT 0 AS i 
-                                        UNION ALL SELECT 1 
-                                        UNION ALL SELECT 2 
-                                        UNION ALL SELECT 3 
-                                        UNION ALL SELECT 4 
-                                        UNION ALL SELECT 5 
-                                        UNION ALL SELECT 6 
-                                        UNION ALL SELECT 7 
-                                        UNION ALL SELECT 8 
-                                        UNION ALL SELECT 9 
-                                        -- Añadir más números si se espera más de 10 elementos en el array
-                                    ) AS idx 
-                                    ON JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) IS NOT NULL
-                                    WHERE o.id_enterprise = ? AND o.date > ? ${seller_filter}
-                                    AND JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) = '2'
-                                ) AS subquery 
-                                GROUP BY status_value 
-                                ORDER BY status_value;`;
+                                FROM orders AS o 
+                                    WHERE o.id_enterprise = ? AND o.date > ? AND status = 1 ${seller_filter}`;
                     connection.con.query(sql, [id_enterprise, date_limit], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
@@ -1733,17 +1715,14 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             router.post('/get-products-data', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_enterprise, date_limit} = req.body;
-                    const sql = `SELECT *
-                                FROM (
-                                    SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.stock_real > 0 AND p.id_enterprise = ?
-                                    UNION
-                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.stock_real > 0 AND p.id_enterprise = ?
-                                    UNION
-                                    SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.stock_real > 0 AND p.id_enterprise = ?
-                                    UNION
-                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.stock_real > 0 AND p.id_enterprise = ?
-                                ) AS results`;
-                    connection.con.query(sql, [id_enterprise, id_enterprise, date_limit, id_enterprise, date_limit, id_enterprise], (err, result, fields) => {
+                    const sql = `SELECT 
+                                    CAST(COUNT(p.id) AS CHAR) AS stock,
+                                    FORMAT(SUM(CASE WHEN p.stock_real > 0 THEN p.sale_price ELSE 0 END), 2) AS stock_price,
+                                    CAST(SUM(CASE WHEN p.sale_date > ? THEN 1 ELSE 0 END) AS CHAR) AS nostock,
+                                    FORMAT(SUM(CASE WHEN p.sale_date < ? THEN p.sale_price ELSE 0 END), 2) AS nostock_price
+                                FROM product AS p 
+                                    WHERE p.stock_real > 0 AND p.id_enterprise = ?`;
+                    connection.con.query(sql, [date_limit, date_limit, id_enterprise], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {

@@ -1570,7 +1570,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                                 new Promise((resolve, reject) => {
                                     let query;
                                     if(product.type == 'real') {
-                                        query = `UPDATE product SET stock_real = (stock_real - ?) WHERE id = ?`;
+                                        query = `UPDATE product SET stock_real = (stock_real - ?), sale_date = NOW() WHERE id = ?`;
                                     } else {
                                         query = `UPDATE product SET stock_available = (stock_available - ?) WHERE id = ?`;
                                     }

@@ -1111,12 +1111,12 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
 
 
         //Remitos/Pedidos
-            // Devuelve datos específicos de la tabla pedidos
-            router.post('/get-orders-data', auth.verifyToken, async function(req, res, next){
+            // Devuelve la cantidad de productos entregados, sin entregar, cancelados, devueltos
+            router.post('/get-orders-data-products', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_enterprise, date_limit, seller} = req.body;
                     let seller_filter = (seller)?`AND seller = ${seller}`:'';
-                    const sql = `SELECT status_value, COUNT(*) AS count_status 
+                    const sql = `SELECT status_value, COUNT(*) AS count_status
                                 FROM ( SELECT JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) AS status_value 
                                     FROM orders AS o
                                     JOIN ( 
@@ -1154,7 +1154,37 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            //---------------------------------------------------------------------------------
+            //Devuelve la cantidad de pedidos finalizados y pendientes
+            router.post('/get-orders-data-orders', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise, date_limit, seller} = req.body;
+                    let seller_filter = (seller)?`AND seller = ${seller}`:'';
+                    const sql = `SELECT 
+                                    COUNT(CASE WHEN status = 1 THEN 1 END) AS open_orders,
+                                    COUNT(CASE WHEN status = 0 THEN 1 END) AS close_orders
+                                FROM 
+                                    orders AS o
+                                WHERE 
+                                    o.id_enterprise = ? 
+                                    AND o.date > ? 
+                                    ${seller_filter};`;
+                    connection.con.query(sql, [id_enterprise, date_limit], (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
 
             // Devuelve el número total de productos por id_enterprise para paginador
             router.post('/get-count-orders', auth.verifyToken, async function(req, res, next){
@@ -1219,8 +1249,6 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 }
                 connection.con.end;
             });
-
-            //---------------------------------------------------------------------------------
 
             // Devuelve un remito por ID solamente
             router.post('/get-order-detail-by-id', auth.verifyToken, async function(req, res, next){

@@ -830,56 +830,6 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             });
 
 
-        // Facturación
-            // Devuelve el número total de facturas por id para paginador
-            router.post('/get-count-bills', auth.verifyToken, async function(req, res, next){
-                try{
-                    let {id} = req.body;
-                    const sql = `SELECT COUNT(*) as total FROM bills WHERE id_enterprise = ?`;
-                    connection.con.query(sql, id, (err, result, fields) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            if(result.length){
-                                res.send({status: 1, data: result});
-                            } else{
-                                res.send({status: 1, data: ''});
-                            }
-                        }
-                    });
-                } catch(error){
-                    //error de conexión
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
-            // Devuelve una lista de facturas de la empresa en cuestión
-            router.post('/get-bills', auth.verifyToken, async function(req, res, next){
-                try{
-                    let {id, page, size} = req.body;
-                    const sql = `SELECT * FROM bills WHERE id_enterprise = ? LIMIT ? OFFSET ?`;
-                    connection.con.query(sql, [id, size, size*page], (err, result, fields) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            if(result.length){
-                                res.send({status: 1, data: result});
-                            } else{
-                                res.send({status: 1, data: ''});
-                            }
-                        }
-                    });
-                } catch(error){
-                    //error de conexión
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
-    // -----------------------------------
-
-
         //Dashboard
             // Devuelve el total de pedidos finalizados
             router.post('/get-data-success-order', auth.verifyToken, async function(req, res, next){

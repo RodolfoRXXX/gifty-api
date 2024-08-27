@@ -484,38 +484,6 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
-            // Devuelve datos específicos de cada enterprise PENDIENTE!!!
-            router.post('/get-enterprise-data', auth.verifyToken, async function(req, res, next){
-                try{
-                    let {id_enterprise, date_limit} = req.body;
-                    const sql = `SELECT *
-                                FROM (
-                                    SELECT CAST(COUNT(p.id) AS CHAR) as data FROM product as p WHERE p.stock_real > 0 AND p.id_enterprise = ?
-                                    UNION
-                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.stock_real > 0 AND p.id_enterprise = ?
-                                    UNION
-                                    SELECT CAST(COUNT(p.id) AS CHAR) FROM product as p WHERE p.sale_date > ? AND p.stock_real > 0 AND p.id_enterprise = ?
-                                    UNION
-                                    SELECT FORMAT(SUM(p.sale_price), 2) FROM product as p WHERE p.sale_date < ? AND p.stock_real > 0 AND p.id_enterprise = ?
-                                ) AS results`;
-                    connection.con.query(sql, [id_enterprise, id_enterprise, date_limit, id_enterprise, date_limit, id_enterprise], (err, result, fields) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            if(result.length){
-                                res.send({status: 1, data: result});
-                            } else{
-                                res.send({status: 1, data: ''});
-                            }
-                        }
-                    });
-                } catch(error){
-                    //error de conexión
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
             //Devuelve el listado de filtros
             router.post('/get-filters', auth.verifyToken, async function(req, res, next){
                 try{
@@ -689,49 +657,6 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
             });
 
             //Devuelve el total de ventas realizadas
-            router.post('/get-user-total-sale', auth.verifyToken, async function(req, res, next){
-                try{
-                    let {id_enterprise, date_limit, seller} = req.body;
-                    let seller_filter = (seller)?`AND seller = ${seller}`:'';
-                    const sql = `SELECT SUM(amount) AS response
-                                FROM (
-                                    SELECT CAST(JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].price'))) AS DECIMAL(10, 2)) AS amount
-                                    FROM orders AS o
-                                    JOIN (
-                                        SELECT 0 AS i 
-                                        UNION ALL SELECT 1 
-                                        UNION ALL SELECT 2 
-                                        UNION ALL SELECT 3 
-                                        UNION ALL SELECT 4 
-                                        UNION ALL SELECT 5 
-                                        UNION ALL SELECT 6 
-                                        UNION ALL SELECT 7 
-                                        UNION ALL SELECT 8 
-                                        UNION ALL SELECT 9
-                                    ) AS idx 
-                                    ON JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) IS NOT NULL
-                                    WHERE o.id_enterprise = ? AND o.date > ? AND o.status = 1 ${seller_filter}
-                                    AND JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) = '1'
-                                ) AS subquery;`;
-                    connection.con.query(sql, [id_enterprise, date_limit], (err, result, fields) => {
-                        if (err) {
-                            res.send({status: 0, data: err});
-                        } else {
-                            if(result.length){
-                                res.send({status: 1, data: result});
-                            } else{
-                                res.send({status: 1, data: ''});
-                            }
-                        }
-                    });
-                } catch(error){
-                    //error de conexión
-                    res.send({status: 0, error: error});
-                }
-                connection.con.end;
-            });
-
-            //Devuelve el total de ventas realizadas
             router.post('/get-user-pending', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_enterprise, date_limit, seller} = req.body;
@@ -781,7 +706,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     let seller_filter = (seller)?`AND seller = ${seller}`:'';
                     const sql = `SELECT COUNT(*) AS response
                                 FROM orders AS o 
-                                WHERE o.id_enterprise = 2 AND o.date > ? AND o.status = 1 ${seller_filter};`;
+                                WHERE o.id_enterprise = ? AND o.date > ? AND o.status = 1 ${seller_filter};`;
                     connection.con.query(sql, [id_enterprise, date_limit], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
@@ -810,7 +735,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                                         COUNT(
                                             CASE WHEN o.status = 1 THEN 1 END) AS open 
                                 FROM orders AS o 
-                                WHERE o.id_enterprise = 2 AND o.date > ? ${seller_filter};`;
+                                WHERE o.id_enterprise = ? AND o.date > ? ${seller_filter};`;
                     connection.con.query(sql, [id_enterprise, date_limit], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});

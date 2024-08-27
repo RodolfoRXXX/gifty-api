@@ -2,14 +2,14 @@ const fs = require("fs").promises; // Usar la versión de promesas de fs
 const Jimp = require("jimp");
 
 // imagen, id, tabla, type, image, width, height, prev_thumb
-async function save_image(id, table, type, image, width, height, prev_thumb) {
+async function save_image(id_enterprise, id, table, type, image, width, height, prev_thumb) {
     try {
         // Extraer la extensión de la imagen
         const [metaData, base64Image] = image.split(';base64,');
         const extension = metaData.split('/')[1];
 
         // Generar el nombre y ruta de la nueva imagen
-        const name_image = `${id}-${table}-${type}.${extension}`;
+        const name_image = `${id_enterprise}-enterprise/${id_enterprise}-${id}-${table}-${type}.${extension}`;
         const route = `./public/uploads/${name_image}`;
 
         // Ruta de la imagen anterior

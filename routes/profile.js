@@ -145,11 +145,11 @@ router.post('/update-email', auth.verifyToken, async function(req, res, next){
 // Carga una nueva imagen de usuario
 router.post('/update-user-image', auth.verifyToken, async (req, res, next) => {
     try {
-        let {id, thumbnail, prev_thumb} = req.body;
+        let {id, id_enterprise, thumbnail, prev_thumb} = req.body;
         let changedRows;
 
         if(thumbnail.includes(';base64,')){
-            await save_image(id, 'user', 'thumbnail', thumbnail, 350, 350, prev_thumb)
+            await save_image(id_enterprise, id, 'user', 'thumbnail', thumbnail, 350, 350, prev_thumb)
             .then( value => {
                 if(value == 'error') throw 'error';
                 else {
@@ -199,7 +199,7 @@ router.post('/update-enterprise-image', auth.verifyToken, async (req, res, next)
         let changedRows;
 
         if(thumbnail.includes(';base64,')){
-            await save_image(id, 'enterprise', 'thumbnail', thumbnail, 350, 350, prev_thumb)
+            await save_image(id, id, 'enterprise', 'thumbnail', thumbnail, 350, 350, prev_thumb)
             .then( value => {
                 if(value == 'error') throw 'error';
                 else {
@@ -1947,11 +1947,11 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 // Edita una imagen para un producto por ID
                 router.post('/edit-product-image', auth.verifyToken, async (req, res, next) => {
                     try {
-                        let {id, image, prev_thumb} = req.body;
+                        let {id, id_enterprise, image, prev_thumb} = req.body;
                         let changedRows;
 
                         if(image.includes(';base64,')){
-                            await save_image(id, 'product', 'picture', image, 600, 600, prev_thumb)
+                            await save_image(id_enterprise, id, 'product', 'picture', image, 600, 600, prev_thumb)
                             .then( value => {
                                 if(value == 'error') throw 'error';
                                 else {

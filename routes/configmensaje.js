@@ -1,4 +1,3 @@
-const nodemailer = require('nodemailer');
 
 module.exports = {
     data: '',
@@ -35,18 +34,6 @@ module.exports = {
 </table>
 `,
     },
-
-    jConfig : {
-        "host":"c1451991.ferozo.com", 
-        "port":465, 
-        "secure":true, 
-        "auth":{ 
-                "type":"login", 
-                "user":"contacto@rodolfodev.com.ar", 
-                "pass":"/oBmGs17tQ" 
-        }
-    },
-
     email_body : { 
         from: "Bamboo",  //remitente - Ver donde aparece esta info en el mail!!!
         to: ``,  //destinatario

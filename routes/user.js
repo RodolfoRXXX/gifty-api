@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const configmensaje = require('./configmensaje');
 const connection = require('../settings/connection');
 const nodemailer = require('nodemailer');
+const jConfig = require('../settings/emailConfig');
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -227,7 +228,7 @@ router.post('/envio-email', async function(req, res){
                 configmensaje.body = configmensaje.plantilla_message;
                 break;*/
         }
-        let transport = nodemailer.createTransport(configmensaje.jConfig);
+        let transport = nodemailer.createTransport(jConfig);
 
         transport.sendMail(configmensaje.email_body, function (error, info) {
             (error)?res.send({status: 1, data: 'nok'}):res.send({status: 1, data: 'ok'});

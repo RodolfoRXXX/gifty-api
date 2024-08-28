@@ -240,7 +240,7 @@ router.post('/update-enterprise', auth.verifyToken, async function(req, res, nex
             if (err) {
                 res.send({status: 0, data: err});
             } else {
-                res.send({status: 1, data: result})
+                res.send({status: 1, data: result, name: name})
             }
         })
     } catch (error) {
@@ -262,16 +262,7 @@ router.post('/update-employee-personal', auth.verifyToken, async function(req, r
                 if (err) {
                     res.send({status: 0, data: err});
                 } else {
-                    changedRows = result.changedRows
-                    const sql_data = `SELECT * FROM employee WHERE id = ?`;
-                        connection.con.query(sql_data, id, (err, result, field) => {
-                            if (err) {
-                                res.send({status: 0, data: err});
-                            } else {
-                                    //éxito al modificar y recargar datos empleado
-                                    res.send({status: 1, data: result, changedRows: changedRows});
-                            }
-                        })
+                    res.send({status: 1, data: result, name: name});
                 }
             })
     } catch (error) {

@@ -8,7 +8,8 @@ const cors = require('cors');
 const fs = require("fs");
 
 const http = require('http');
-const hostname = '127.0.0.1';
+//const hostname = '127.0.0.1';
+const hostname = 'vps-4353411-x.dattaweb.com';
 
 //inicialización
 const app = express();

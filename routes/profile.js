@@ -484,7 +484,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                                     GROUP_CONCAT(filter_value ORDER BY filter_value SEPARATOR ',') AS filter_values
                                 FROM 
                                     filters
-                                WHERE ID_ENTERPRISE = ?
+                                WHERE id_enterprise = ?
                                 GROUP BY 
                                     filter_name;`;
                     connection.con.query(sql, id_enterprise, (err, result, fields) => {
@@ -512,7 +512,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     const sql = `SELECT filter_name, CONCAT('[', GROUP_CONCAT( JSON_OBJECT('id', id, 'value', filter_value) 
                                     ORDER BY filter_value SEPARATOR ', ' ), ']') AS filter_values 
                                 FROM filters 
-                                WHERE ID_ENTERPRISE = ?
+                                WHERE id_enterprise = ?
                                 GROUP BY filter_name`;
                     connection.con.query(sql, id_enterprise, (err, result, fields) => {
                         if (err) {
@@ -1922,11 +1922,11 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 //Edita un producto, pero los campos de stock_real, stock_available
                 router.post('/edit-product-stock', auth.verifyToken, async function(req, res, next){
                     try {
-                        let {id, stock_real, stock_available} = req.body;
+                        let {id, stock_real} = req.body;
 
                         const sql = `UPDATE product AS p 
                                     SET stock_real=?, stock_available=? WHERE p.id = ?`;
-                        connection.con.query(sql, [stock_real, stock_available, id], (err, result, field) => {
+                        connection.con.query(sql, [stock_real, stock_real, id], (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
                             } else {

@@ -23,8 +23,8 @@ module.exports = {
     
     con : mysql.createPool({
         host: "127.0.0.1",
-        user:"root",
-        password:"f8HtENweuGCm",
+        user:"rodolfo",
+        password:"ruin876deem012",
         database:"api_bamboo"
     })
     

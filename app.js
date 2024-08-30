@@ -2,7 +2,7 @@
 /* ----------------------------------------------- */
 const express = require('express');
 const indexRouter = require('./routes/index');
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 5377;
 const path = require('path');
 const cors = require('cors');
 const fs = require("fs");

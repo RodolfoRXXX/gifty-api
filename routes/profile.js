@@ -1584,7 +1584,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     const sql = `SELECT 
                                     CAST(COUNT(p.id) AS CHAR) AS stock,
                                     FORMAT(SUM(CASE WHEN p.stock_real > 0 THEN p.sale_price * p.stock_real ELSE 0 END), 2) AS stock_price,
-                                    CAST(COUNT(CASE WHEN p.sale_date IS NOT NULL AND p.sale_date <> '' AND p.sale_date > ? THEN 1 ELSE NULL END) AS CHAR) AS nostock,
+                                    CAST(COUNT(CASE WHEN p.sale_date IS NOT NULL AND p.sale_date <> '' AND p.sale_date > ? AND p.stock_real = 0 THEN 1 ELSE NULL END) AS CHAR) AS nostock,
                                     FORMAT(SUM(CASE WHEN p.purchase_date IS NOT NULL AND p.purchase_date <> '' AND p.purchase_date < ? THEN p.sale_price ELSE 0 END), 2) AS nostock_price
                                 FROM product AS p 
                                     WHERE p.stock_real > 0 AND p.id_enterprise = ?;`;

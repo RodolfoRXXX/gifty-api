@@ -1585,7 +1585,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                                     CAST(COUNT(p.id) AS CHAR) AS stock,
                                     FORMAT(SUM(CASE WHEN p.stock_real > 0 THEN p.sale_price * p.stock_real ELSE 0 END), 2) AS stock_price,
                                     CAST(COUNT(CASE WHEN p.sale_date IS NOT NULL AND p.sale_date <> '' AND p.sale_date > ? THEN 1 ELSE NULL END) AS CHAR) AS nostock,
-                                    FORMAT(SUM(CASE WHEN p.sale_date IS NOT NULL AND p.sale_date <> '' AND p.sale_date < ? THEN p.sale_price ELSE 0 END), 2) AS nostock_price
+                                    FORMAT(SUM(CASE WHEN p.purchase_date IS NOT NULL AND p.purchase_date <> '' AND p.purchase_date < ? THEN p.sale_price ELSE 0 END), 2) AS nostock_price
                                 FROM product AS p 
                                     WHERE p.stock_real > 0 AND p.id_enterprise = ?;`;
                     connection.con.query(sql, [date_limit, date_limit, id_enterprise], (err, result, fields) => {
@@ -1825,8 +1825,34 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     try {
                         let {id_enterprise, name, description, category, sku } = req.body;
 
-                        const sql = `INSERT INTO product(id_enterprise, image, name, description, category, sku, stock_real, stock_available, storage_location, sale_price, purchase_price, provider, purchase_date, sale_date, state) 
-                                    VALUES (?,'no-image.png',?,?,?,?,0,0,1,0.00,0.00,1,'','','inactivo')`;
+                        const sql = `INSERT INTO product(
+                                        id_enterprise,
+                                        image,
+                                        name,
+                                        description,
+                                        category,
+                                        sku,
+                                        stock_real,
+                                        stock_available,
+                                        storage_location,
+                                        provider,
+                                        purchase_date,
+                                        sale_date,
+                                        state) 
+                                    VALUES (
+                                        ?,
+                                        'no-image.png',
+                                        ?,
+                                        ?,
+                                        ?,
+                                        ?,
+                                        0,
+                                        0,
+                                        1,
+                                        1,
+                                        '',
+                                        '',
+                                        'inactivo')`;
                         connection.con.query(sql, [id_enterprise, name, description, category, sku], (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
@@ -1905,8 +1931,8 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                         let {id, provider, purchase_date, purchase_price} = req.body;
 
                         const sql = `UPDATE product AS p 
-                                    SET provider=?, purchase_date=?, purchase_price=? WHERE p.id = ?`;
-                        connection.con.query(sql, [provider, purchase_date, purchase_price, id], (err, result, field) => {
+                                    SET provider=?, purchase_date=?, sale_price=?, purchase_price=? WHERE p.id = ?`;
+                        connection.con.query(sql, [provider, purchase_date, purchase_price, purchase_price, id], (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
                             } else {
@@ -1925,7 +1951,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                         let {id, stock_real} = req.body;
 
                         const sql = `UPDATE product AS p 
-                                    SET stock_real=?, stock_available=? WHERE p.id = ?`;
+                                    SET stock_real=?, stock_available=?, purchase_date=NOW() WHERE p.id = ?`;
                         connection.con.query(sql, [stock_real, stock_real, id], (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
@@ -2263,7 +2289,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                                 if (!result.length) {
                                     //éxito en no encontrar este depósito
                                     const sql = `INSERT INTO storage (id_enterprise, name, phone, address, city, state, country, status)
-                                                VALUES (?,?,?,?,?,?,?, 0);`;
+                                                VALUES (?,?,?,?,?,?,?, 1);`;
                                     connection.con.query(sql, [id_enterprise, name, phone, address, city, state, country], (err, response, fields) => {
                                         if (err) {
                                             //error de conexion o para crear el depósito

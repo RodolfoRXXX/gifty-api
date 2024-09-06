@@ -83,18 +83,9 @@ router.post('/update-username', auth.verifyToken, async function(req, res, next)
             if (err) {
                 res.send({status: 0, data: err});
             } else {
-                changedRows = result.changedRows
-                const sql_data = `SELECT u.id, u.name, u.email, u.password, u.thumbnail, e.name AS enterprise, u.activation_code, u.state FROM users AS u INNER JOIN enterprise AS e ON u.id_enterprise = e.id WHERE u.id = ?`;
-                connection.con.query(sql_data, id, (err, result, field) => {
-                    if (err) {
-                        res.send({status: 0, data: err});
-                    } else {
-                        let user = [{id: result[0].id, name: result[0].name, email: result[0].email, password: result[0].password, thumbnail: result[0].thumbnail, enterprise: result[0].enterprise, activation_code: result[0].activation_code, state: result[0].state}]
-                            //éxito al modificar usuario
-                            let token = jwt.sign({data: user}, keys.key);
-                            res.send({status: 1, data: user, token: token, changedRows: changedRows});
-                    }
-                })
+                //éxito al modificar usuario
+                changedRows = result.changedRows;
+                res.send({status: 1, data: name, changedRows: changedRows});
             }
         })
     } catch (error) {

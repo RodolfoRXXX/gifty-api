@@ -9,7 +9,7 @@ module.exports = {
                 <tr>
                     <th style="width: 360px; height: 75px; ">
                         <div style="background: #fff; margin: 10px 0; box-sizing: border-box; border-top-left-radius: 30px; border-top-right-radius: 30px; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; padding: 10px 20px; ">
-                            <p style="font-family: Trebuchet MS, Helvetica; font-size: 34px; margin: 0; position: relative; top: 7px; line-height: 40px;">Bamboo</p>
+                            <p style="font-family: Trebuchet MS, Helvetica; font-size: 34px; margin: 0; position: relative; top: 7px; line-height: 40px; color: #00695c; ">bamboo - notHuman</p>
                         </div>
                     </th>
                 </tr>
@@ -26,8 +26,8 @@ module.exports = {
         html_final : `</td>
         </tr>
         <tr>
-            <td style="width: 360px; height: 110px; background-color: #000; border-radius: 10px; box-sizing: border-box; padding: 40px 60px; text-align: center;">
-                <a style="font-family: Trebuchet MS, Helvetica; color: #fff; text-decoration: none; font-size: 20px; height: 20px;" href="https://www.bamboo.com.ar" title="Ir a bamboo.com.ar">www.bamboo.com.ar</a>
+            <td style="width: 360px; height: 110px; background-color: #00695c; border-radius: 10px; box-sizing: border-box; padding: 40px 60px; text-align: center;">
+                <a style="font-family: Trebuchet MS, Helvetica; color: #fff; text-decoration: none; font-size: 20px; height: 20px;" href="https://bamboo.nothuman.com.ar" title="Ir a bamboo.nothuman.com.ar">bamboo.nothuman.com.ar</a>
             </td>
         </tr>
     </tbody>
@@ -54,7 +54,7 @@ module.exports = {
         </div>
         <div style="padding: 12px 10px; ">
             <p style="font-family: Trebuchet MS, Helvetica; display: block; text-align: center; font-size: 16px; line-height: 18px; margin: auto; ">
-                Este es tu código de verificación, ingresalo en tu cuenta para verificarla y poder acceder a todas sus funcionalidades.
+                Este es tu código de verificación, ingresalo en tu cuenta para verificarla y poder acceder a todas sus funciones.
             </p>
         </div>
     </div>`,
@@ -109,7 +109,7 @@ module.exports = {
         </div>
         <div style="padding: 12px 10px; ">
             <p style="font-family: Trebuchet MS, Helvetica; display: block; text-align: center; font-size: 16px; line-height: 18px; margin: auto; ">
-                Este es tu código de verificación, ingresalo en tu cuenta para verificarla y poder acceder a todas sus funcionalidades. Si no fuiste vos, ponete en contacto con tu administrador para resolver el problema.
+                Este es tu código de verificación, ingresalo en tu cuenta para verificarla y poder acceder a todas sus funciones. Si no fuiste vos, ponete en contacto con tu administrador para resolver el problema.
             </p>
         </div>
     </div>`,

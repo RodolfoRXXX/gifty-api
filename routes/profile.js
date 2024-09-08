@@ -1518,6 +1518,52 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
 
         
         // Clientes
+            // Devuelve el número total de clientes por empresa para paginador
+            router.post('/get-count-customers', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT COUNT(*) as total FROM customer WHERE id_enterprise = ?`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Devuelve el listado de clientes
+            router.post('/get-customers', auth.verifyToken, async function(req, res, next){
+                try{
+                    let {id_enterprise} = req.body;
+                    const sql = `SELECT * FROM customer WHERE id_enterprise = ?`;
+                    connection.con.query(sql, id_enterprise, (err, result, fields) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            if(result.length){
+                                res.send({status: 1, data: result});
+                            } else{
+                                res.send({status: 1, data: ''});
+                            }
+                        }
+                    });
+                } catch(error){
+                    //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
             //Crea un nuevo cliente
             router.post('/create-customer', auth.verifyToken, async function(req, res, next){
                 try{
@@ -2329,7 +2375,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
 
 
         //Providers
-            // Devuelve el número total de facturas por id para paginador
+            // Devuelve el número total de provedores por empresa para el paginador
             router.post('/get-count-providers', auth.verifyToken, async function(req, res, next){
                 try{
                     let {id_enterprise} = req.body;

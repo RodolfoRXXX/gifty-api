@@ -6,8 +6,8 @@ const jConfig = {
     secure: true, 
     auth: {
         type: "login",
-        user: "rodolfo.singular@gmail.com", 
-        pass: "axtj pmxq egji qkip"
+        user: "bamboo.nothuman@gmail.com", 
+        pass: "aben mtqa smym jsvf"
     }
 };
 

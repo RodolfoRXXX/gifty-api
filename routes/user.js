@@ -203,7 +203,7 @@ router.post('/envio-email', async function(req, res){
         configmensaje.data = req.body.data;
         switch (req.body.tipo) {
             case 'register':
-                configmensaje.email_body.subject = 'Bienvenido a - Bamboo! -';
+                configmensaje.email_body.subject = 'Bienvenido a Bamboo!';
                 configmensaje.email_body.html = configmensaje.body.html_initial + configmensaje.email_body.subject + configmensaje.body.html_middle + configmensaje.plantilla_register.pr1 + configmensaje.data + configmensaje.plantilla_register.pr2 + configmensaje.body.html_final;
                 break;
             case 'code':

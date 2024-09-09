@@ -1692,6 +1692,156 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 connection.con.end;
             });
 
+            //DATA - Cliente para su detalle
+                //Devuelve el total de ventas realizadas por el cliente
+                router.post('/get-customer-total-purchase', auth.verifyToken, async function(req, res, next){
+                    try{
+                        let {date_limit, customer} = req.body;
+                        const sql = `SELECT SUM(amount) AS response
+                                    FROM (
+                                        SELECT CAST(JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].price'))) AS DECIMAL(10, 2)) AS amount
+                                        FROM orders AS o
+                                        JOIN (
+                                            SELECT 0 AS i 
+                                            UNION ALL SELECT 1 
+                                            UNION ALL SELECT 2 
+                                            UNION ALL SELECT 3 
+                                            UNION ALL SELECT 4 
+                                            UNION ALL SELECT 5 
+                                            UNION ALL SELECT 6 
+                                            UNION ALL SELECT 7 
+                                            UNION ALL SELECT 8 
+                                            UNION ALL SELECT 9
+                                        ) AS idx 
+                                        ON JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) IS NOT NULL
+                                        WHERE o.date > ? AND o.status = 0 AND customer = ?
+                                        AND JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) = '1'
+                                    ) AS subquery;`;
+                        connection.con.query(sql, [date_limit, customer], (err, result, fields) => {
+                            if (err) {
+                                res.send({status: 0, data: err});
+                            } else {
+                                if(result.length){
+                                    res.send({status: 1, data: result});
+                                } else{
+                                    res.send({status: 1, data: ''});
+                                }
+                            }
+                        });
+                    } catch(error){
+                        //error de conexión
+                        res.send({status: 0, error: error});
+                    }
+                    connection.con.end;
+                });
+
+                //Devuelve el total de ventas pendientes de entrega
+                router.post('/get-customer-pending-order', auth.verifyToken, async function(req, res, next){
+                    try{
+                        let {date_limit, customer} = req.body;
+                        const sql = `SELECT SUM(amount) AS response
+                                    FROM (
+                                        SELECT CAST(JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].price'))) AS DECIMAL(10, 2)) AS amount
+                                        FROM orders AS o
+                                        JOIN (
+                                            SELECT 0 AS i 
+                                            UNION ALL SELECT 1 
+                                            UNION ALL SELECT 2 
+                                            UNION ALL SELECT 3 
+                                            UNION ALL SELECT 4 
+                                            UNION ALL SELECT 5 
+                                            UNION ALL SELECT 6 
+                                            UNION ALL SELECT 7 
+                                            UNION ALL SELECT 8 
+                                            UNION ALL SELECT 9
+                                        ) AS idx 
+                                        ON JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) IS NOT NULL
+                                        WHERE o.date > ? AND o.status = 1 AND customer = ?
+                                        AND JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) = '2'
+                                    ) AS subquery;`;
+                        connection.con.query(sql, [date_limit, customer], (err, result, fields) => {
+                            if (err) {
+                                res.send({status: 0, data: err});
+                            } else {
+                                if(result.length){
+                                    res.send({status: 1, data: result});
+                                } else{
+                                    res.send({status: 1, data: ''});
+                                }
+                            }
+                        });
+                    } catch(error){
+                        //error de conexión
+                        res.send({status: 0, error: error});
+                    }
+                    connection.con.end;
+                });
+                
+                //Devuelve el total de ventas devueltas por el cliente
+                router.post('/get-customer-return-order', auth.verifyToken, async function(req, res, next){
+                    try{
+                        let {date_limit, customer} = req.body;
+                        const sql = `SELECT SUM(amount) AS response
+                                    FROM (
+                                        SELECT CAST(JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].price'))) AS DECIMAL(10, 2)) AS amount
+                                        FROM orders AS o
+                                        JOIN (
+                                            SELECT 0 AS i 
+                                            UNION ALL SELECT 1 
+                                            UNION ALL SELECT 2 
+                                            UNION ALL SELECT 3 
+                                            UNION ALL SELECT 4 
+                                            UNION ALL SELECT 5 
+                                            UNION ALL SELECT 6 
+                                            UNION ALL SELECT 7 
+                                            UNION ALL SELECT 8 
+                                            UNION ALL SELECT 9
+                                        ) AS idx 
+                                        ON JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) IS NOT NULL
+                                        WHERE o.date > ? AND o.status = 0 AND customer = ?
+                                        AND JSON_UNQUOTE(JSON_EXTRACT(detail, CONCAT('$[', idx.i, '].status'))) = '5'
+                                    ) AS subquery;`;
+                        connection.con.query(sql, [date_limit, customer], (err, result, fields) => {
+                            if (err) {
+                                res.send({status: 0, data: err});
+                            } else {
+                                if(result.length){
+                                    res.send({status: 1, data: result});
+                                } else{
+                                    res.send({status: 1, data: ''});
+                                }
+                            }
+                        });
+                    } catch(error){
+                        //error de conexión
+                        res.send({status: 0, error: error});
+                    }
+                    connection.con.end;
+                });
+
+                //Devuelve la frecuencia de compra del cliente
+                router.post('/get-customer-frecuency-order', auth.verifyToken, async function(req, res, next){
+                    try{
+                        let {date_limit, customer} = req.body;
+                        const sql = `SELECT COUNT(*) AS response FROM orders WHERE date > ? AND customer = ? AND status = 0;`;
+                        connection.con.query(sql, [date_limit, customer], (err, result, fields) => {
+                            if (err) {
+                                res.send({status: 0, data: err});
+                            } else {
+                                if(result.length){
+                                    res.send({status: 1, data: result});
+                                } else{
+                                    res.send({status: 1, data: ''});
+                                }
+                            }
+                        });
+                    } catch(error){
+                        //error de conexión
+                        res.send({status: 0, error: error});
+                    }
+                    connection.con.end;
+                });
+
 
         // Productos
             // Devuelve datos específicos de la tabla productos

@@ -1565,7 +1565,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                             res.send({status: 0, data: err});
                         } else {
                             if (!result.length) {
-                                //éxito en no encontrar esta categoría
+                                //éxito en no encontrar ese cliente
                                 const sql = `INSERT INTO customer(id_enterprise, name, cuit, email, phone, mobile, address, city, state, country, status, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
                                 connection.con.query(sql, [id_enterprise, name, cuit, email, phone, mobile, address, city, state, country, status], (err, response, fields) => {
                                     if (err) {
@@ -1584,6 +1584,27 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     });
                 } catch(error){
                     //error de conexión
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Edita un cliente, pero los campos de información básica
+            router.post('/edit-customer-information', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id, name, cuit, email, phone, mobile, address, city, state, country} = req.body;
+
+                    const sql = `UPDATE customer 
+                                SET name=?, cuit=?, email=?, phone=?, mobile=?, address=?, city=?, state=?, country=? 
+                                WHERE id = ?`;
+                    connection.con.query(sql, [name, cuit, email, phone, mobile, address, city, state, country, id ], (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
                     res.send({status: 0, error: error});
                 }
                 connection.con.end;
@@ -1608,6 +1629,65 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 } catch(error){
                     //error de conexión
                     res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            //Activa o desactiva un cliente
+            router.post('/edit-customer-activation', auth.verifyToken, async function(req, res, next){
+                try {
+                    let {id, status} = req.body;
+
+                    const sql = `UPDATE customer 
+                                SET status=? WHERE id = ?`;
+                    connection.con.query(sql, [status, id], (err, result, field) => {
+                        if (err) {
+                            res.send({status: 0, data: err});
+                        } else {
+                            res.send({status: 1, data: result})
+                        }
+                    })
+                } catch (error) {
+                    res.send({status: 0, error: error});
+                }
+                connection.con.end;
+            });
+
+            // Edita una imagen para un cliente por ID
+            router.post('/edit-customer-image', auth.verifyToken, async (req, res, next) => {
+                try {
+                    let {id, id_enterprise, thumbnail, prev_thumb} = req.body;
+                    let changedRows;
+
+                    if(thumbnail.includes(';base64,')){
+                        await save_image(id_enterprise, id, 'customer', 'thumbnail', thumbnail, 600, 600, prev_thumb)
+                        .then( value => {
+                            if(value == 'error') throw 'error';
+                            else {
+                                thumbnail = value;
+                            }
+                        } )
+                        .catch( error => {
+                            throw error;
+                        } )
+                    }
+
+                    if(prev_thumb !== thumbnail) {
+                        const sql = `UPDATE customer SET thumbnail = ? WHERE id = ?`;
+                        connection.con.query(sql, [thumbnail, id], (err, result, field) => {
+                            if (err) {
+                                res.send({status: 0, data: err});
+                            } else {
+                                changedRows = result.changedRows
+                                res.send({status: 1, changedRows: changedRows});
+                            }
+                        })
+                    } else {
+                        changedRows = 1
+                        res.send({status: 1, changedRows: changedRows});
+                    }
+                } catch (error) {
+                    res.send({status: 0, data: error});
                 }
                 connection.con.end;
             });

@@ -1072,7 +1072,8 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                                 INNER JOIN customer AS c ON o.customer = c.id
                                 INNER JOIN employee AS e ON o.seller = e.id 
                                 WHERE o.id_enterprise = ?
-                                ${dateTime_var} ${sellerF_var} ${state_var} ${seller_filter} ${customer_filter}`;
+                                ${dateTime_var} ${sellerF_var} ${state_var} ${seller_filter} ${customer_filter}
+                                ORDER BY date DESC`;
                     connection.con.query(sql, [id_enterprise, size*page], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
@@ -1156,7 +1157,7 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                                 FROM product AS p
                                 WHERE p.name LIKE ? AND p.id_enterprise = ?
                                 ORDER BY name`;
-                    connection.con.query(sql, [`${text}%`, id_enterprise], (err, result, fields) => {
+                    connection.con.query(sql, [`%${text}%`, id_enterprise], (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {
@@ -2221,11 +2222,12 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                 //Edita un producto, pero los campos de stock_real, stock_available
                 router.post('/edit-product-stock', auth.verifyToken, async function(req, res, next){
                     try {
-                        let {id, stock_real} = req.body;
+                        let {id, increment} = req.body;
 
                         const sql = `UPDATE product AS p 
-                                    SET stock_real=?, stock_available=?, purchase_date=NOW() WHERE p.id = ?`;
-                        connection.con.query(sql, [stock_real, stock_real, id], (err, result, field) => {
+                                    SET stock_real = stock_real + ?, stock_available = stock_available + ?, purchase_date=NOW() 
+                                    WHERE p.id = ?`;
+                        connection.con.query(sql, [increment, increment, id], (err, result, field) => {
                             if (err) {
                                 res.send({status: 0, data: err});
                             } else {

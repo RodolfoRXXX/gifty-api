@@ -183,6 +183,120 @@ router.post('/update-user-image', auth.verifyToken, async (req, res, next) => {
     connection.con.end;
 });
 
+//Crear una nueva empresa, role y empleado de un usuario nuevo sin empresa
+router.post('/create-new-enterprise', auth.verifyToken, async function(req, res, next) {
+    const { id_user, name, plan } = req.body;
+
+    async function createEnterprise(conect, id_user, name, plan) {
+        try {
+            // Start the transaction
+            await new Promise((resolve, reject) => {
+                conect.beginTransaction(err => {
+                    if (err) return reject(err);
+                    resolve();
+                });
+            });
+
+            // Step 1: Verify if the enterprise already exists
+            const existingEnterprise = await new Promise((resolve, reject) => {
+                const checkQuery = `SELECT id FROM enterprise WHERE name = ?`;
+                conect.query(checkQuery, [name], (err, results) => {
+                    if (err) return reject(err);
+                    resolve(results);
+                });
+            });
+
+            if (existingEnterprise.length > 0) {
+                throw new Error('existente');
+            }
+
+            // Step 2: Insert the new enterprise
+            const enterpriseValues = [name, 'no-image.png', plan];
+            const enterpriseResult = await new Promise((resolve, reject) => {
+                const enterpriseQuery = `INSERT INTO enterprise (name, thumbnail, plan, updatedPayment, created) 
+                                         VALUES (?, ?, ?, NOW(), NOW())`;
+                conect.query(enterpriseQuery, enterpriseValues, (err, results) => {
+                    if (err) return reject(err);
+                    resolve(results);
+                });
+            });
+
+            const id_enterprise = enterpriseResult.insertId;
+
+            // Step 3: Insert the new role
+            const roleValues = [id_enterprise, 'administrador', 'computer', '1,2,5,6'];
+            const roleResult = await new Promise((resolve, reject) => {
+                const roleQuery = `INSERT INTO role (id_enterprise, name_role, icon_role, list_of_permissions) 
+                                   VALUES (?, ?, ?, ?)`;
+                conect.query(roleQuery, roleValues, (err, results) => {
+                    if (err) return reject(err);
+                    resolve(results);
+                });
+            });
+
+            const id_role = roleResult.insertId;
+
+            // Step 4: Insert the new employee
+            const employeeValues = [id_user, id_enterprise, id_role, 1];
+            const employeeResult = await new Promise((resolve, reject) => {
+                const employeeQuery = `INSERT INTO employee (id_user, id_enterprise, role, status, created) 
+                                       VALUES (?, ?, ?, ?, NOW())`;
+                conect.query(employeeQuery, employeeValues, (err, results) => {
+                    if (err) return reject(err);
+                    resolve(results);
+                });
+            });
+
+            const id_employee = employeeResult.insertId;
+
+            // Step 5: change the enterprise for user
+            const userValue = [id_enterprise, id_user];
+            const userResult = await new Promise((resolve, reject) => {
+                const userQuery = `UPDATE users SET id_enterprise = ? WHERE id = ?`;
+                conect.query(userQuery, userValue, (err, results) => {
+                    if (err) return reject(err);
+                    resolve(results);
+                });
+            });
+
+            // Commit the transaction
+            await new Promise((resolve, reject) => {
+                conect.commit(err => {
+                    if (err) return reject(err);
+                    resolve();
+                });
+            });
+
+            return { id_enterprise, id_role, id_employee, userResult };
+        } catch (error) {
+            // Rollback the transaction in case of any error
+            await new Promise((resolve, reject) => {
+                conect.rollback(() => {
+                    reject(error);
+                });
+            });
+            throw error; // rethrow error after rollback
+        }
+    }
+
+    connection.con.getConnection(async (err, conect) => {
+        if (err) {
+            res.send({ status: 0, error: err });
+            return;
+        }
+
+        try {
+            const response = await createEnterprise(conect, id_user, name, plan);
+            res.send({ status: 1, data: response });
+        } catch (error) {
+            res.send({ status: 0, error: error.message });
+        } finally {
+            conect.release();
+        }
+    });
+});
+
+
 // Carga un nuevo logo para la empresa
 router.post('/update-enterprise-image', auth.verifyToken, async (req, res, next) => {
     try {

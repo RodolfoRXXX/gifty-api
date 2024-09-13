@@ -296,6 +296,24 @@ router.post('/create-new-enterprise', auth.verifyToken, async function(req, res,
     });
 });
 
+//Cambiar el estado de la empresa
+router.post('/change-enterprise-state', auth.verifyToken, async function(req, res, next){
+    try {
+        let {id_enterprise, status} = req.body;
+
+        const sql = `UPDATE enterprise SET status=? WHERE id = ?`;
+        connection.con.query(sql, [status, id_enterprise], (err, result, field) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                res.send({status: 1, data: result})
+            }
+        })
+    } catch (error) {
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
 
 // Carga un nuevo logo para la empresa
 router.post('/update-enterprise-image', auth.verifyToken, async (req, res, next) => {

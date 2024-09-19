@@ -2452,6 +2452,116 @@ router.post('/update-role-permissions', auth.verifyToken, async function(req, re
                     connection.con.end;
                 });
 
+                //Importar productos desde un archivo externo
+                router.post('/import-product', auth.verifyToken, async function(req, res, next) {
+                    let { id_enterprise, products } = req.body; // Obtenemos los datos del cuerpo de la solicitud
+                    let add = 0;
+                    let updated = 0;
+                
+                    // Función para importar productos con manejo de transacción
+                    async function importProducts(conect, id_enterprise, products) {
+                        try {
+                            // Iniciar la transacción
+                            await conect.beginTransaction();
+                
+                            // Iterar sobre cada producto
+                            for (const product of products) {
+                                const { name, description, sku, category, stock_real, sale_price } = product;
+                
+                                // Verificar si el producto ya existe
+                                const [rows] = await new Promise((resolve, reject) => {
+                                    conect.query(
+                                        'SELECT sku, stock_real, stock_available FROM product WHERE sku = ? AND id_enterprise = ?',
+                                        [sku, id_enterprise],
+                                        (error, results) => {
+                                            if (error) return reject(error);
+                                            resolve(results);
+                                        }
+                                    );
+                                });
+                
+                                // Manejar el caso en que `rows` devuelva un solo objeto
+                                const result = Array.isArray(rows) ? rows : [rows];
+                
+                                if (rows != undefined && result.length > 0 && result[0].sku) {
+                                    // Si el producto ya existe, actualizar el stock
+                                    const currentStockReal = result[0].stock_real;
+                                    const currentStockAvailable = result[0].stock_available;
+                
+                                    await new Promise((resolve, reject) => {
+                                        conect.query(
+                                            `UPDATE product 
+                                             SET stock_real = ?, stock_available = ? 
+                                             WHERE sku = ? AND id_enterprise = ?`,
+                                            [currentStockReal + stock_real, currentStockAvailable + stock_real, sku, id_enterprise],
+                                            (error, results) => {
+                                                if (error) return reject(error);
+                                                updated++;
+                                                resolve(results);
+                                            }
+                                        );
+                                    });
+                                } else {
+                                    // Si no existe, insertar el nuevo producto
+                                    await new Promise((resolve, reject) => {
+                                        conect.query(
+                                            `INSERT INTO product (
+                                                id_enterprise, image, name, description, category, filters, sku, stock_real, stock_available, storage_location, sale_price, purchase_price, provider, purchase_date, sale_date, state) 
+                                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)`,
+                                            [id_enterprise, 'no-image.png', name, description, category, '', sku, stock_real, stock_real, 1, sale_price, sale_price, 1, '', 'activo'],
+                                            (error, results) => {
+                                                if (error) return reject(error);
+                                                add++;
+                                                resolve(results);
+                                            }
+                                        );
+                                    });
+                                }
+                            }
+                
+                            // Confirmar la transacción
+                            await new Promise((resolve, reject) => {
+                                conect.commit(err => {
+                                    if (err) return reject(err);
+                                    resolve();
+                                });
+                            });
+                
+                            return { done: true, add: add, updated: updated };
+                        } catch (error) {
+                            // En caso de error, hacer rollback de la transacción
+                            await new Promise((resolve, reject) => {
+                                conect.rollback(() => {
+                                    reject(error);
+                                });
+                            });
+                            throw error; // Lanza el error para manejarlo en el bloque `catch` del controlador principal
+                        }
+                    }
+                
+                    // Obtener una conexión de la pool de conexiones
+                    connection.con.getConnection(async (err, conect) => {
+                        if (err) {
+                            res.send({ status: 0, error: err });
+                            return;
+                        }
+                
+                        try {
+                            // Llamar a la función importProducts para procesar los productos
+                            const response = await importProducts(conect, id_enterprise, products);
+                            res.send({ status: 1, data: response });
+                        } catch (error) {
+                            res.send({ status: 0, error: error.message });
+                        } finally {
+                            conect.release(); // Liberar la conexión para que vuelva a la pool
+                        }
+                    });
+                });
+                
+                
+                
+                
+
 
         //Categorías
             // Devuelve el listado de las categorías

@@ -16,7 +16,7 @@ module.exports = {
         host: "localhost",
         user:"root",
         password:"",
-        database:"api_bamboo"
+        database:"api_gifty"
     })
 
 //datos de conexión en cloud

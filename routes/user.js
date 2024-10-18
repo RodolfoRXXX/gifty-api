@@ -15,53 +15,103 @@ app.use(cors());
 const md5     = require('md5');
 const jwt     = require('jsonwebtoken');
 const { restart } = require('nodemon');
+const generateNumber = require('../functions/generateNumber');
 
 //Registra un usuario nuevo
-router.post('/register', async function(req, res, next){
-    try{
-        let {name, email, password, thumbnail, id_enterprise, activation_code, state} = req.body;
+router.post('/register', async (req, res) => {
+    try {
+        let { email, password, thumbnail, activationCode } = req.body;
 
-        let name_enterprise;
-        let enterprise_thumbnail;
-        const sql_e = `SELECT * FROM enterprise WHERE id = ?;`
-        connection.con.query(sql_e, id_enterprise, (err, result, fields) => {
-            if (err) {
-                //error para encontrar la empresa
-                res.send({status: 0, data: err});
-            } else {
-                //Empresa encontrada y guardada en una variable temporal
-                name_enterprise = result[0].name;
-                enterprise_thumbnail = result[0].thumbnail;
+        // Función para generar el profileId y verificar que no exista duplicado
+        const generateUniqueprofileId = async () => {
+            let profileId;
+            let exists = true;
+            while (exists) {
+                profileId = generateNumber(20); // Genera código alfanumérico de 20 caracteres
+                exists = await checkIfprofileIdExists(profileId);
             }
-        })
+            return profileId;
+        };
 
-        const hashed_password = md5(password.toString())
-        const checkEmail = `SELECT email FROM users WHERE email = ?`;
-        connection.con.query(checkEmail, [email], (err, result, fields) => {
-            if (!result.length) {
-                //éxito en no encontrar usuario registrado
-                const sql = `INSERT INTO users (name, email, password, thumbnail, id_enterprise, activation_code, state) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-                connection.con.query(sql, [name, email, hashed_password, thumbnail, id_enterprise, activation_code, state], (err, result, fields) => {
+        // Función para verificar si el profileId existe en la base de datos
+        const checkIfprofileIdExists = (profileId) => {
+            return new Promise((resolve, reject) => {
+                const checkprofileIdQuery = `SELECT profileId FROM user WHERE profileId = ?`;
+                connection.con.query(checkprofileIdQuery, [profileId], (err, result) => {
                     if (err) {
-                        //error de conexion o para agregar el usuario
-                        res.send({status: 0, data: err});
-                    } else {
-                        let user = [{id: result.insertId, name: name, email: email, password: hashed_password, thumbnail: thumbnail, id_enterprise: id_enterprise, enterprise: name_enterprise, enterprise_thumbnail: enterprise_thumbnail, activation_code: activation_code, state: state}]
-                        //éxito al agregar el usuario
-                        let token = jwt.sign({data: user}, keys.key);
-                        res.send({status: 1, data: user, token: token});
+                        return reject(err);
                     }
-                })
-            } else{
-                //error porque existe usuario
-                res.send({status: 1, data: 'existente'});
-            }
-        });
-    } catch(error){
-        //error de conexión
-        res.send({status: 0, error: error});
+                    resolve(result.length > 0); // Si existe un duplicado, devuelve true
+                });
+            });
+        };
+
+        // Función para verificar si el email ya está registrado
+        const checkIfEmailExists = (email) => {
+            return new Promise((resolve, reject) => {
+                const checkEmailQuery = `SELECT email FROM user WHERE email = ?`;
+                connection.con.query(checkEmailQuery, [email], (err, result) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve(result.length > 0); // Si el email ya existe, devuelve true
+                });
+            });
+        };
+
+        // Función para insertar el nuevo usuario
+        const insertNewUser = (email, hashed_password, profileId, thumbnail, activationCode) => {
+            return new Promise((resolve, reject) => {
+                const insertUserQuery = `
+                    INSERT INTO user (email, password, profileId, thumbnail, activationCode, created)
+                    VALUES (?, ?, ?, ?, ?, NOW())
+                `;
+                connection.con.query(insertUserQuery, [email, hashed_password, profileId, thumbnail, activationCode], (err, result) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve(result);
+                });
+            });
+        };
+
+        // Genera profileId único
+        const profileId = await generateUniqueprofileId();
+
+        // Encripta la contraseña
+        const hashed_password = md5(password.toString());
+
+        // Verifica si el email ya existe
+        const emailExists = await checkIfEmailExists(email);
+
+        if (emailExists) {
+            // Error porque el email ya existe
+            return res.send({ status: 1, data: 'existente' });
+        }
+
+        // Inserta el nuevo usuario
+        const insertResult = await insertNewUser(email, hashed_password, profileId, thumbnail, activationCode);
+
+        // Usuario agregado con éxito
+        let user = [{
+            id: insertResult.insertId,
+            email: email,
+            password: hashed_password,
+            profileId: profileId,
+            thumbnail: thumbnail,
+            status: 0
+        }];
+
+        // Genera token JWT
+        let token = jwt.sign({ data: user }, keys.key);
+        res.send({ status: 1, data: user, token: token });
+
+    } catch (error) {
+        // Error de conexión o ejecución
+        res.send({ status: 0, error: error });
+    } finally {
+        connection.con.end(); // Asegúrate de cerrar la conexión
     }
-    connection.con.end;
 });
 
 //Comprueba las credenciales de usuario y dá acceso
@@ -69,8 +119,14 @@ router.post('/login', async function(req, res, next){
     try {
         let {email, password} = req.body;
         const hashed_password = md5(password.toString())
-        const sql = `SELECT u.id, u.name, u.email, u.password, u.thumbnail, u.id_enterprise, e.name AS enterprise, e.thumbnail AS enterprise_thumbnail, u.activation_code, u.state 
-                    FROM users AS u INNER JOIN enterprise AS e ON u.id_enterprise = e.id 
+        const sql = `SELECT 
+                        u.id,
+                        u.email,
+                        u.profileId,
+                        u.thumbnail,
+                        u.name,
+                        u.status 
+                    FROM user AS u
                     WHERE u.email = ? AND u.password = ?`
         connection.con.query(sql, [email, hashed_password], (err, result, field) => {
             if (err) {
@@ -93,11 +149,17 @@ router.post('/login', async function(req, res, next){
 //Comprueba las credenciales de usuario y dá acceso
 router.post('/recharge', async function(req, res, next){
     try {
-        let {email, password} = req.body;
-        const sql = `SELECT u.id, u.name, u.email, u.password, u.thumbnail, u.id_enterprise, e.name AS enterprise, e.thumbnail AS enterprise_thumbnail, u.activation_code, u.state 
-                    FROM users AS u INNER JOIN enterprise AS e ON u.id_enterprise = e.id 
-                    WHERE u.email = ? AND u.password = ?`
-        connection.con.query(sql, [email, password], (err, result, field) => {
+        let {email, profileId} = req.body;
+        const sql = `SELECT 
+                        u.id,
+                        u.email,
+                        u.profileId,
+                        u.thumbnail,
+                        u.name,
+                        u.status 
+                    FROM user AS u
+                    WHERE u.email = ? AND u.profileId = ?`
+        connection.con.query(sql, [email, profileId], (err, result, field) => {
             if (err) {
                 res.send({status: 0, data: err});
             } else {
@@ -120,7 +182,7 @@ router.post('/verificate-email', async function(req, res, next){
     try{
         let {email} = req.body;
 
-        const checkEmail = `SELECT * FROM users WHERE email = ?`;
+        const checkEmail = `SELECT * FROM user WHERE email = ?`;
         connection.con.query(checkEmail, email, (err, result, fields) => {
             if (err) {
                 res.send({status: 0, data: err});
@@ -144,15 +206,15 @@ router.post('/verificate-email', async function(req, res, next){
 //Activa la cuenta bloqueada por código de activación
 router.post('/verificate-code', async function(req, res, next){
     try{
-        let {email, activation_code} = req.body;
+        let {email, activationCode} = req.body;
 
-        const checkCode = `SELECT * FROM users WHERE email = ? AND activation_code = ?`;
-        connection.con.query(checkCode, [email, activation_code], (err, result, fields) => {
+        const checkCode = `SELECT * FROM user WHERE email = ? AND activationCode = ?`;
+        connection.con.query(checkCode, [email, activationCode], (err, result, fields) => {
             if (err) {
                 res.send({status: 0, data: err});
             } else {
                 if(result.length){
-                    const activate = `UPDATE users SET state = 1 WHERE id = ?`;
+                    const activate = `UPDATE user SET status = 1 WHERE id = ?`;
                     connection.con.query(activate, result[0].id, (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
@@ -161,30 +223,6 @@ router.post('/verificate-code', async function(req, res, next){
                         }
                     });
                 } else{
-                    res.send({status: 1, data: ''});
-                }
-            }
-        });
-    } catch(error){
-        //error de conexión
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
-
-//Devuelve el listado de empresas de la tabla Enterprises
-router.get('/get-enterprises', async function(req, res, next){
-    try{
-        const getEnterprise = `SELECT * FROM enterprise`;
-        connection.con.query(getEnterprise, (err, result, fields) => {
-            if(err){
-                res.send({status: 0, data: err});
-            } else{
-                if (result.length) {
-                    //Devuelve el listado
-                    res.send({status: 1, data: result});
-                } else{
-                    //No encontró el listado
                     res.send({status: 1, data: ''});
                 }
             }
@@ -247,7 +285,7 @@ router.put('/restore-password', async function(req, res, next){
         let {email, id, password} = req.body;
 
         const hashed_password = md5(password.toString())
-        const sql = `UPDATE users SET password = ? WHERE id = ?`;
+        const sql = `UPDATE user SET password = ? WHERE id = ?`;
         connection.con.query(sql, [hashed_password, id, email], (err, result, field) => {
             if (err) {
                 res.send({status: 0, data: err});

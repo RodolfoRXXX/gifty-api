@@ -19,15 +19,15 @@ const generateNumber = require('../functions/generateNumber');
 // Desbloquea la cuenta del usuario cundo se ingresa el código de activación asignado a dicha cuenta
 router.post('/verificate-user', auth.verifyToken, async function(req, res, next){
     try{
-        let {email, activation_code} = req.body;
+        let {email, activationCode} = req.body;
 
-        const checkCode = `SELECT * FROM users WHERE email = ? AND activation_code = ?`;
-        connection.con.query(checkCode, [email, activation_code], (err, result, fields) => {
+        const checkCode = `SELECT * FROM user WHERE email = ? AND activationCode = ?`;
+        connection.con.query(checkCode, [email, activationCode], (err, result, fields) => {
             if (err) {
                 res.send({status: 0, data: err});
             } else {
                 if(result.length){
-                    const activate = `UPDATE users SET state = 1 WHERE id = ?`;
+                    const activate = `UPDATE user SET status = 1 WHERE id = ?`;
                     connection.con.query(activate, result[0].id, (err, result, fields) => {
                         if (err) {
                             res.send({status: 0, data: err});
@@ -53,7 +53,7 @@ router.post('/verificate-password', auth.verifyToken, async function(req, res, n
         let {id, password} = req.body;
 
         const hashed_password = md5(password.toString())
-        const checkPassword = `SELECT * FROM users WHERE id = ? AND password = ?`;
+        const checkPassword = `SELECT * FROM user WHERE id = ? AND password = ?`;
         connection.con.query(checkPassword, [id, hashed_password], (err, result, fields) => {
             if (err) {
                 res.send({status: 0, data: err});
@@ -72,35 +72,13 @@ router.post('/verificate-password', auth.verifyToken, async function(req, res, n
     connection.con.end;
 });
 
-// Actualiza el nombre de usuario
-router.post('/update-username', auth.verifyToken, async function(req, res, next){
-    try {
-        let {id, name} = req.body;
-
-        let changedRows;
-        const sql = `UPDATE users SET name = ? WHERE id = ?`;
-        connection.con.query(sql, [name, id], (err, result, field) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                //éxito al modificar usuario
-                changedRows = result.changedRows;
-                res.send({status: 1, data: name, changedRows: changedRows});
-            }
-        })
-    } catch (error) {
-        res.send({status: 0, error: error});
-    }
-    connection.con.end;
-});
-
 // Actualiza la contraseña del usuario
 router.post('/update-password', auth.verifyToken, async function(req, res, next){
     try {
         let {id, password} = req.body;
 
         const hashed_password = md5(password.toString())
-        const sql = `UPDATE users SET password = ? WHERE id = ?`;
+        const sql = `UPDATE user SET password = ? WHERE id = ?`;
         connection.con.query(sql, [hashed_password, id], (err, result, field) => {
             if (err) {
                 res.send({status: 0, data: err});
@@ -117,10 +95,10 @@ router.post('/update-password', auth.verifyToken, async function(req, res, next)
 // Actualiza el correo electrónico del usuario
 router.post('/update-email', auth.verifyToken, async function(req, res, next){
     try {
-        let {id, email, activation_code, state} = req.body;
+        let {id, email, status} = req.body;
 
-        const sql = `UPDATE users SET email = ?, activation_code = ?, state = ? WHERE id = ?`;
-        connection.con.query(sql, [email, activation_code, state, id], (err, result, field) => {
+        const sql = `UPDATE user SET email = ?, status = ? WHERE id = ?`;
+        connection.con.query(sql, [email, status, id], (err, result, field) => {
             if (err) {
                 res.send({status: 0, data: err});
             } else {

@@ -2,23 +2,27 @@ const fs = require("fs").promises; // Usar la versión de promesas de fs
 const Jimp = require("jimp");
 
 // imagen, id, tabla, type, image, width, height, prev_thumb
-async function save_image(id_enterprise, id, table, type, image, width, height, prev_thumb) {
+async function save_image(profileId, type, image, width, height, prev_thumb) {
     try {
         // Extraer la extensión de la imagen
         const [metaData, base64Image] = image.split(';base64,');
         const extension = metaData.split('/')[1];
 
         // Generar el nombre y ruta de la nueva imagen
-        const name_image = `${id_enterprise}-enterprise/${id_enterprise}-${id}-${table}-${type}.${extension}`;
-        const route = `./public/uploads/${name_image}`;
+        const name_image = `${profileId}/${type}-${profileId}.${extension}`;
+        const folderPath = `./public/uploads/${profileId}`;
+        const route = `${folderPath}/${type}-${profileId}.${extension}`;
 
         // Ruta de la imagen anterior
         const prev_route = `./public/uploads/${prev_thumb}`;
 
-        // Verificar y eliminar la imagen anterior si no es "no-image.png"
-        if (prev_thumb !== 'no-image.png' && await fileExists(prev_route)) {
+        // Verificar y eliminar la imagen anterior si no es "no-image-user.png"
+        if (prev_thumb !== 'no-image-user.png' && await fileExists(prev_route)) {
             await fs.unlink(prev_route);
         }
+
+        // Crear la carpeta si no existe
+        await fs.mkdir(folderPath, { recursive: true });
 
         // Procesar la nueva imagen
         const imageBuffer = Buffer.from(base64Image, 'base64');
@@ -44,3 +48,4 @@ async function fileExists(path) {
 }
 
 module.exports = save_image;
+

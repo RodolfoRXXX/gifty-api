@@ -141,58 +141,93 @@ router.post('/get-profile-id', auth.verifyToken, async function(req, res, next){
     connection.con.end;
 });
 
-
-// Carga una nueva imagen de usuario
-router.post('/update-user-image', auth.verifyToken, async (req, res, next) => {
+//Edita el perfíl del usuario
+router.post('/edit-profile', auth.verifyToken, async (req, res, next) => {
     try {
-        let {id, id_enterprise, thumbnail, prev_thumb} = req.body;
-        let changedRows;
+        let {profileId, name, location, thumbnail, prev_thumb} = req.body;
+        let thumbnail_var = '';
 
         if(thumbnail.includes(';base64,')){
-            await save_image(id_enterprise, id, 'user', 'thumbnail', thumbnail, 350, 350, prev_thumb)
+            await save_image(profileId, 'thumbnail', thumbnail, 350, 350, prev_thumb)
             .then( value => {
                 if(value == 'error') throw 'error';
                 else {
                     thumbnail = value;
+                    if(prev_thumb !== thumbnail) {
+                        thumbnail_var = (thumbnail)?`, thumbnail = "${thumbnail}"`:'';
+                    }
                 }
             } )
             .catch( error => {
                 throw error;
             } )
         }
-        const sql_data = `SELECT u.*, e.name AS enterprise, e.thumbnail AS enterprise_thumbnail
-                            FROM users AS u 
-                            INNER JOIN enterprise AS e ON u.id_enterprise = e.id 
-                            WHERE u.id = ?`;
-        connection.con.query(sql_data, id, (err, result, field) => {
-            if (err) {
-                res.send({status: 0, data: err});
-            } else {
-                let user = [{id: result[0].id, name: result[0].name, email: result[0].email, password: result[0].password, thumbnail: thumbnail, id_enterprise: result[0].id_enterprise, enterprise: result[0].enterprise, enterprise_thumbnail: result[0].enterprise_thumbnail, activation_code: result[0].activation_code, state: result[0].state}]
-                let token = jwt.sign({data: user}, keys.key);
-                if(prev_thumb !== thumbnail) {
-                    const sql = `UPDATE users SET thumbnail = ? WHERE id = ?`;
-                    connection.con.query(sql, [thumbnail, id], (err, result, field) => {
+        const sql = `UPDATE user SET name = ?, location = ? ${thumbnail_var} WHERE profileId = ?`;
+                    connection.con.query(sql, [name, location, profileId], (err, result, field) => {
                         if (err) {
                             res.send({status: 0, data: err});
                         } else {
-                            changedRows = result.changedRows
-                            res.send({status: 1, data: user, token: token, changedRows: changedRows});
+                            res.send({status: 1, data: result, UpdatedValues: {name: name, location: location, thumbnail: thumbnail}});
                         }
                     })
-                } else {
-                    changedRows = 1
-                    res.send({status: 1, data: user, token: token, changedRows: changedRows});
-                }
-            }
-        })
     } catch (error) {
         res.send({status: 0, data: error});
     }
     connection.con.end;
 });
 
-/* ----------------------- GET --------------------------*/
+
+/* ----------------------- OBSOLETAS --------------------------*/
+
+                // Carga una nueva imagen de usuario
+                router.post('/update-user-image', auth.verifyToken, async (req, res, next) => {
+                    try {
+                        let {id, id_enterprise, thumbnail, prev_thumb} = req.body;
+                        let changedRows;
+
+                        if(thumbnail.includes(';base64,')){
+                            await save_image(id_enterprise, id, 'user', 'thumbnail', thumbnail, 350, 350, prev_thumb)
+                            .then( value => {
+                                if(value == 'error') throw 'error';
+                                else {
+                                    thumbnail = value;
+                                }
+                            } )
+                            .catch( error => {
+                                throw error;
+                            } )
+                        }
+                        const sql_data = `SELECT u.*, e.name AS enterprise, e.thumbnail AS enterprise_thumbnail
+                                            FROM users AS u 
+                                            INNER JOIN enterprise AS e ON u.id_enterprise = e.id 
+                                            WHERE u.id = ?`;
+                        connection.con.query(sql_data, id, (err, result, field) => {
+                            if (err) {
+                                res.send({status: 0, data: err});
+                            } else {
+                                let user = [{id: result[0].id, name: result[0].name, email: result[0].email, password: result[0].password, thumbnail: thumbnail, id_enterprise: result[0].id_enterprise, enterprise: result[0].enterprise, enterprise_thumbnail: result[0].enterprise_thumbnail, activation_code: result[0].activation_code, state: result[0].state}]
+                                let token = jwt.sign({data: user}, keys.key);
+                                if(prev_thumb !== thumbnail) {
+                                    const sql = `UPDATE users SET thumbnail = ? WHERE id = ?`;
+                                    connection.con.query(sql, [thumbnail, id], (err, result, field) => {
+                                        if (err) {
+                                            res.send({status: 0, data: err});
+                                        } else {
+                                            changedRows = result.changedRows
+                                            res.send({status: 1, data: user, token: token, changedRows: changedRows});
+                                        }
+                                    })
+                                } else {
+                                    changedRows = 1
+                                    res.send({status: 1, data: user, token: token, changedRows: changedRows});
+                                }
+                            }
+                        })
+                    } catch (error) {
+                        res.send({status: 0, data: error});
+                    }
+                    connection.con.end;
+                });
 
             //Editar campos de un producto
                 //Crea un producto nuevo pero solo la parte de información básica de producto

@@ -117,7 +117,7 @@ router.post('/update-email', auth.verifyToken, async function(req, res, next){
 // PROFILE
 
 // Obtener un perfíl desde un número de id(profileId)
-router.post('/get-profile-id', auth.verifyToken, async function(req, res, next){
+router.post('/get-profile', auth.verifyToken, async function(req, res, next){
     try{
         let {profileId} = req.body;
         const sql = `SELECT u.email, u.profileId, u.thumbnail, u.name, u.location, u.followers 
@@ -175,6 +175,32 @@ router.post('/edit-profile', auth.verifyToken, async (req, res, next) => {
     }
     connection.con.end;
 });
+router.post('/get-event', auth.verifyToken, async function(req, res, next){
+    try{
+        let {eventId} = req.body;
+        const sql = `SELECT  e.eventId, e.type, e.date, e.name, e.description, e.goal, e.profileId, e.status
+                     FROM event AS e 
+                     WHERE eventId = ?`;
+        connection.con.query(sql, eventId, (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                if(result.length){
+                    res.send({status: 1, data: result});
+                } else{
+                    res.send({status: 1, data: ''});
+                }
+            }
+        });
+    } catch(error){
+        //error de conexión
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
+
+//EVENT
+
 
 
 /* ----------------------- OBSOLETAS --------------------------*/

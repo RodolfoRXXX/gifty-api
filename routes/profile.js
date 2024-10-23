@@ -175,6 +175,11 @@ router.post('/edit-profile', auth.verifyToken, async (req, res, next) => {
     }
     connection.con.end;
 });
+
+
+//EVENT
+
+//Obtiene el evento dado el eventId
 router.post('/get-event', auth.verifyToken, async function(req, res, next){
     try{
         let {eventId} = req.body;
@@ -199,7 +204,67 @@ router.post('/get-event', auth.verifyToken, async function(req, res, next){
     connection.con.end;
 });
 
-//EVENT
+
+//MESSAGES
+
+//Obtiene los mensajes de un evento en particular
+router.post('/get-messages-event', auth.verifyToken, async function(req, res, next) {
+    try {
+        let { eventId } = req.body;
+        const sql = `
+            SELECT m.*, u.name AS userName, u.email
+            FROM message AS m
+            LEFT JOIN user AS u ON u.profileId = m.profileId
+            WHERE m.eventId = ?
+        `;
+        connection.con.query(sql, eventId, (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                if(result.length) {
+                    res.send({status: 1, data: result});
+                } else {
+                    res.send({status: 1, data: ''});
+                }
+            }
+        });
+    } catch (error) {
+        // error de conexión
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
+
+
+//REGALOS
+
+//Obtiene los regalos hechos a un evento
+router.post('/get-gift-event', auth.verifyToken, async function(req, res, next) {
+    try {
+        let { eventId } = req.body;
+        const sql = `
+            SELECT g.*, u.name AS userName, u.email, u.thumbnail
+            FROM gift AS g
+            LEFT JOIN user AS u ON u.profileId = g.profileId
+            WHERE g.eventId = ?
+        `;
+        connection.con.query(sql, eventId, (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                if(result.length) {
+                    res.send({status: 1, data: result});
+                } else {
+                    res.send({status: 1, data: ''});
+                }
+            }
+        });
+    } catch (error) {
+        // error de conexión
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
 
 
 

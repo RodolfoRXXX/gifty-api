@@ -204,6 +204,31 @@ router.post('/get-event', auth.verifyToken, async function(req, res, next){
     connection.con.end;
 });
 
+//Obtiene el listadol de eventos para el profileId pasado
+router.post('/get-event-list', auth.verifyToken, async function(req, res, next){
+    try{
+        let {profileId} = req.body;
+        const sql = `SELECT  e.*, u.profileId, u.name AS userName, u.email, u.thumbnail
+                     FROM event AS e 
+                     INNER JOIN user AS u ON u.profileId = e.profileId
+                     WHERE e.profileId = ?`;
+        connection.con.query(sql, profileId, (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                if(result.length){
+                    res.send({status: 1, data: result});
+                } else{
+                    res.send({status: 1, data: ''});
+                }
+            }
+        });
+    } catch(error){
+        //error de conexión
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
 
 //MESSAGES
 

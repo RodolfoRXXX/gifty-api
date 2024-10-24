@@ -204,6 +204,60 @@ router.post('/get-event', auth.verifyToken, async function(req, res, next){
     connection.con.end;
 });
 
+//Editár o crear un evento
+router.post('/edit-event', auth.verifyToken, async (req, res, next) => {
+    try {
+        let {eventId, profileId, type, name, date, description, addGoal, goal} = req.body;
+        let arr = [];
+        let sql;
+
+        const generateUniqueEventId = async () => {
+            let newId;
+            let exists = true;
+            while (exists) {
+                newId = generateNumber(20); // Genera código alfanumérico de 20 caracteres
+                exists = await checkIfEventIdExists(newId);
+            }
+            return newId;
+        };
+
+        // Función para verificar si el eventId existe en la base de datos
+        const checkIfEventIdExists = (newId) => {
+            return new Promise((resolve, reject) => {
+                const checkeventIdQuery = `SELECT eventId FROM event WHERE eventId = ?`;
+                connection.con.query(checkeventIdQuery, [newId], (err, result) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve(result.length > 0); // Si existe un duplicado, devuelve true
+                });
+            });
+        };
+
+        if(typeof((eventId) == 'string') && eventId.length) {
+            //Edito un evento
+            sql = `UPDATE event AS e SET e.type=?,e.date=?,e.name=?,e.description=?,e.goal=? WHERE e.eventId = ?`;
+            arr = [type, date, name, description, goal, eventId];
+        } else {
+            //Crea un evento
+            sql = `INSERT INTO event(eventId, type, date, name, description, goal, profileId, status, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
+            // Genera profileId único
+            const _eventId = await generateUniqueEventId();
+            arr = [_eventId, type, date, name, description, goal, profileId, 1];
+        }
+                connection.con.query(sql, arr, (err, result, field) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        res.send({status: 1, data: result});
+                    }
+                })
+    } catch (error) {
+        res.send({status: 0, data: error});
+    }
+    connection.con.end;
+});
+
 //Obtiene el listadol de eventos para el profileId pasado
 router.post('/get-event-list', auth.verifyToken, async function(req, res, next){
     try{

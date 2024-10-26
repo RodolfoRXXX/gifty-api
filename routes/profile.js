@@ -314,6 +314,59 @@ router.post('/get-messages-event', auth.verifyToken, async function(req, res, ne
     connection.con.end;
 });
 
+//Obtiene el total de los mensajes para ese evento
+router.post('/count-messages-event', auth.verifyToken, async function(req, res, next) {
+    try {
+        let { eventId } = req.body;
+        const sql = `
+            SELECT COUNT(*) AS total
+            FROM message
+            WHERE eventId = ?
+        `;
+        connection.con.query(sql, eventId, (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                if(result.length) {
+                    res.send({status: 1, data: result});
+                } else {
+                    res.send({status: 1, data: ''});
+                }
+            }
+        });
+    } catch (error) {
+        // error de conexión
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
+
+//Obtiene el total de los regalos para ese evento
+router.post('/count-gifts-event', auth.verifyToken, async function(req, res, next) {
+    try {
+        let { eventId } = req.body;
+        const sql = `
+            SELECT COUNT(*) AS total
+            FROM gift
+            WHERE eventId = ?
+        `;
+        connection.con.query(sql, eventId, (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                if(result.length) {
+                    res.send({status: 1, data: result});
+                } else {
+                    res.send({status: 1, data: ''});
+                }
+            }
+        });
+    } catch (error) {
+        // error de conexión
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
 
 //REGALOS
 

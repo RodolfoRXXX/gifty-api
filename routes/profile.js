@@ -16,6 +16,104 @@ const generateNumber = require('../functions/generateNumber');
 
 /* ----------------------- POST --------------------------*/
 
+//Funciones comunes
+
+// Función para generar un eventId único
+const generateUniqueEventId = async () => {
+    let newId;
+    let exists = true;
+    while (exists) {
+        newId = generateNumber(20); // Genera código alfanumérico de 20 caracteres
+        exists = await checkIfEventIdExists(newId);
+    }
+    return newId;
+};
+
+// Función para verificar si el eventId existe en la base de datos
+const checkIfEventIdExists = (newId) => {
+    return new Promise((resolve, reject) => {
+        const checkEventIdQuery = `SELECT eventId FROM event WHERE eventId = ?`;
+        connection.con.query(checkEventIdQuery, [newId], (err, result) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(result.length > 0); // Si existe un duplicado, devuelve true
+        });
+    });
+};
+
+//Función que verifica caducidad de aniversarios y los duplica si fuera necesario
+router.post('/duplicateExpiredAnniversaries', async function(req, res, next) {
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Ignora el tiempo para comparar solo la fecha
+
+        // 1. Obtener eventos de tipo "aniversario" con status = 1 y finalized < hoy
+        const query = `SELECT * FROM event WHERE type = 'aniversario' AND status = 1 AND finalized < ?`;
+        connection.con.query(query, [today], async (err, results) => {
+            if (err) {
+                return res.send({ status: 0, data: err });
+            }
+
+            if (results.length === 0) {
+                return res.send({ status: 1, message: 'No hay eventos vencidos para duplicar.' });
+            }
+
+            // 2. Duplicar cada evento vencido con finalized actualizado
+            const duplicatedEvents = await Promise.all(results.map(async event => {
+                const newEventId = await generateUniqueEventId();
+
+                // Crear la nueva fecha `finalized` sumando un año
+                const newFinalizedDate = new Date(event.finalized);
+                newFinalizedDate.setFullYear(newFinalizedDate.getFullYear() + 1);
+                const formattedFinalizedDate = newFinalizedDate.toISOString().split('T')[0];
+
+                return [
+                    newEventId,
+                    event.profileId,
+                    event.type,
+                    event.name,
+                    event.date,
+                    event.description,
+                    event.goal,
+                    today,                  // Fecha de creación
+                    formattedFinalizedDate, // Nueva fecha de finalized en formato 'YYYY-MM-DD'
+                    1                       // Nuevo status activo
+                ];
+            }));
+
+            // 3. Insertar eventos duplicados
+            const insertQuery = `INSERT INTO event (eventId, profileId, type, name, date, description, goal, created, finalized, status) VALUES ?`;
+            connection.con.query(insertQuery, [duplicatedEvents], (insertErr, insertResult) => {
+                if (insertErr) {
+                    return res.send({ status: 0, data: insertErr });
+                }
+
+                // 4. Actualizar el `status` de los eventos originales a 0
+                const updateQuery = `UPDATE event SET status = 0 WHERE id IN (?)`;
+                const expiredEventIds = results.map(event => event.id);
+                connection.con.query(updateQuery, [expiredEventIds], (updateErr, updateResult) => {
+                    if (updateErr) {
+                        return res.send({ status: 0, data: updateErr });
+                    }
+
+                    res.send({
+                        status: 1,
+                        message: `${insertResult.affectedRows} eventos duplicados y ${updateResult.affectedRows} eventos actualizados a status 0.`
+                    });
+                });
+            });
+        });
+    } catch (error) {
+        console.log(error);
+        res.send({ status: 0, error: error });
+    }
+    connection.con.end;
+});
+
+
+// ----------------------------------------------------------------------------------------------
+
 // SETTINGS
 
 // Desbloquea la cuenta del usuario cundo se ingresa el código de activación asignado a dicha cuenta
@@ -122,7 +220,7 @@ router.post('/get-profile', auth.verifyToken, async function(req, res, next){
         let {profileId} = req.body;
         const sql = `SELECT u.email, u.profileId, u.thumbnail, u.name, u.location, u.followers 
                      FROM user AS u 
-                     WHERE profileId = ?`;
+                     WHERE u.profileId = ?`;
         connection.con.query(sql, profileId, (err, result, fields) => {
             if (err) {
                 res.send({status: 0, data: err});
@@ -207,43 +305,20 @@ router.post('/get-event', auth.verifyToken, async function(req, res, next){
 //Editár o crear un evento
 router.post('/edit-event', auth.verifyToken, async (req, res, next) => {
     try {
-        let {eventId, profileId, type, name, date, description, addGoal, goal} = req.body;
+        let {eventId, profileId, type, name, date, description, addGoal, goal, finalized} = req.body;
         let arr = [];
         let sql;
 
-        const generateUniqueEventId = async () => {
-            let newId;
-            let exists = true;
-            while (exists) {
-                newId = generateNumber(20); // Genera código alfanumérico de 20 caracteres
-                exists = await checkIfEventIdExists(newId);
-            }
-            return newId;
-        };
-
-        // Función para verificar si el eventId existe en la base de datos
-        const checkIfEventIdExists = (newId) => {
-            return new Promise((resolve, reject) => {
-                const checkeventIdQuery = `SELECT eventId FROM event WHERE eventId = ?`;
-                connection.con.query(checkeventIdQuery, [newId], (err, result) => {
-                    if (err) {
-                        return reject(err);
-                    }
-                    resolve(result.length > 0); // Si existe un duplicado, devuelve true
-                });
-            });
-        };
-
         if(typeof((eventId) == 'string') && eventId.length) {
-            //Edito un evento
-            sql = `UPDATE event AS e SET e.type=?,e.date=?,e.name=?,e.description=?,e.goal=? WHERE e.eventId = ?`;
-            arr = [type, date, name, description, goal, eventId];
+            //Edita un evento
+            sql = `UPDATE event AS e SET e.type=?,e.date=?,e.name=?,e.description=?,e.goal=?,finalized=? WHERE e.eventId = ?`;
+            arr = [type, date, name, description, goal, finalized, eventId];
         } else {
             //Crea un evento
-            sql = `INSERT INTO event(eventId, type, date, name, description, goal, profileId, status, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
+            sql = `INSERT INTO event(eventId, type, date, name, description, goal, profileId, finalized, status, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
             // Genera profileId único
             const _eventId = await generateUniqueEventId();
-            arr = [_eventId, type, date, name, description, goal, profileId, 1];
+            arr = [_eventId, type, date, name, description, goal, profileId, finalized, 1];
         }
                 connection.con.query(sql, arr, (err, result, field) => {
                     if (err) {
@@ -265,7 +340,7 @@ router.post('/get-event-list', auth.verifyToken, async function(req, res, next){
         const sql = `SELECT  e.*, u.profileId, u.name AS userName, u.email, u.thumbnail
                      FROM event AS e 
                      INNER JOIN user AS u ON u.profileId = e.profileId
-                     WHERE e.profileId = ?`;
+                     WHERE e.profileId = ? AND e.status = 1`;
         connection.con.query(sql, profileId, (err, result, fields) => {
             if (err) {
                 res.send({status: 0, data: err});

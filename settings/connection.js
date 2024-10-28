@@ -16,7 +16,8 @@ module.exports = {
         host: "localhost",
         user:"root",
         password:"",
-        database:"api_gifty"
+        database:"api_gifty",
+        connectionLimit: 10,
     })
 
 //datos de conexión en cloud

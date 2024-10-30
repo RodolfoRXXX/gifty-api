@@ -205,6 +205,25 @@ router.post('/edit-profile', auth.verifyToken, async (req, res, next) => {
     connection.con.end;
 });
 
+//Buscá perfiles desde la home
+router.post('/search-users', async function(req, res, next){
+    let {query} = req.body;
+
+    if (!query) {
+        return res.status(400).send({ status: 0, message: 'Query is required.' });
+    }
+
+    const sql = `SELECT * FROM user WHERE name LIKE ? OR email LIKE ? LIMIT 10`; // Ajusta la consulta según tu base de datos
+    const likeQuery = `%${query}%`;
+
+    connection.con.query(sql, [likeQuery, likeQuery], (err, results) => {
+        if (err) {
+            return res.status(500).send({ status: 0, data: err });
+        }
+        res.send({ status: 1, data: results });
+    });
+});
+
 
 //EVENT
 
@@ -289,6 +308,37 @@ router.post('/get-event-list', auth.verifyToken, async function(req, res, next){
     }
     connection.con.end;
 });
+
+//Obtiene el listadol de eventos para el profileId pasado
+router.get('/get-event-top', async function(req, res, next){
+    try{
+        const sql = `
+                    SELECT  e.*, u.profileId, u.name AS userName, u.email, u.thumbnail
+                        FROM event AS e 
+                        INNER JOIN user AS u ON u.profileId = e.profileId
+                    WHERE DATE_SUB(e.finalized, INTERVAL 10 DAY) > NOW()
+                        AND e.status = 1 
+                    ORDER BY e.finalized ASC 
+                    LIMIT 10
+                    `;
+        connection.con.query(sql, (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                if(result.length){
+                    res.send({status: 1, data: result});
+                } else{
+                    res.send({status: 1, data: ''});
+                }
+            }
+        });
+    } catch(error){
+        // error de conexión
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
+
 
 //MESSAGES
 

@@ -6,6 +6,8 @@ const port = process.env.PORT || 4000;
 const path = require('path');
 const cors = require('cors');
 const fs = require("fs");
+const cron = require('node-cron');
+const duplicateExpiredAnniversaries = require('./functions/updateEvent');
 
 const http = require('http');
 const hostname = '127.0.0.1';
@@ -34,4 +36,10 @@ app.use('/', indexRouter);
 
 app.get('/prueba', (req, res) => {
     res.send('Exito');
+});
+
+// Programar la función para que se ejecute todos los días a las 6:00 AM
+cron.schedule('0 6 * * *', () => {
+    console.log('Ejecutando tarea diaria de verificación de eventos finalizados a las 6:00 AM');
+    duplicateExpiredAnniversaries();
 });

@@ -424,7 +424,8 @@ router.post('/count-gifts-event', auth.verifyToken, async function(req, res, nex
     connection.con.end;
 });
 
-//REGALOS
+
+//GIFTS
 
 //Obtiene los regalos hechos a un evento
 router.post('/get-gift-event', auth.verifyToken, async function(req, res, next) {
@@ -455,6 +456,33 @@ router.post('/get-gift-event', auth.verifyToken, async function(req, res, next) 
 });
 
 
+//NOTIFICATIONS
+router.post('/get-notifications', auth.verifyToken, async function(req, res, next) {
+    try {
+        let { profileId } = req.body;
+        const sql = `
+            SELECT n.*, u.name AS userName, u.email 
+            FROM notification AS n
+            LEFT JOIN user AS u ON u.profileId = n.profileId
+            WHERE n.profileId = ?
+        `;
+        connection.con.query(sql, profileId, (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                if(result.length) {
+                    res.send({status: 1, data: result});
+                } else {
+                    res.send({status: 1, data: ''});
+                }
+            }
+        });
+    } catch (error) {
+        // error de conexión
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
 
 /* ----------------------- OBSOLETAS --------------------------*/
 

@@ -126,6 +126,7 @@ router.post('/login', async function(req, res, next){
                         u.thumbnail,
                         u.name,
                         u.followers,
+                        u.followed,
                         u.status 
                     FROM user AS u
                     WHERE u.email = ? AND u.password = ?`
@@ -157,6 +158,8 @@ router.post('/recharge', async function(req, res, next){
                         u.profileId,
                         u.thumbnail,
                         u.name,
+                        u.followers,
+                        u.followed,
                         u.status 
                     FROM user AS u
                     WHERE u.email = ? AND u.profileId = ?`

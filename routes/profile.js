@@ -146,10 +146,10 @@ router.post('/update-email', auth.verifyToken, async function(req, res, next){
 // PROFILE
 
 // Obtener un perfíl desde un número de id(profileId)
-router.post('/get-profile', auth.verifyToken, async function(req, res, next){
+router.post('/get-profile', async function(req, res, next){
     try{
         let {profileId} = req.body;
-        const sql = `SELECT u.email, u.profileId, u.thumbnail, u.name, u.location, u.followers 
+        const sql = `SELECT u.email, u.profileId, u.thumbnail, u.name, u.location, u.followers, u.followed 
                      FROM user AS u 
                      WHERE u.profileId = ?`;
         connection.con.query(sql, profileId, (err, result, fields) => {
@@ -224,15 +224,34 @@ router.post('/search-users', async function(req, res, next){
     });
 });
 
+//Actualiza los seguidores
+router.post('/update-followers', auth.verifyToken, async (req, res, next) => {
+    try {
+        let {profileId, followed} = req.body;
+            sql = `UPDATE user AS u SET u.followed = ? WHERE u.profileId = ?`;
+                connection.con.query(sql, [followed, profileId], (err, result, field) => {
+                    if (err) {
+                        res.send({status: 0, data: err});
+                    } else {
+                        res.send({status: 1, data: result});
+                    }
+                })
+    } catch (error) {
+        res.send({status: 0, data: error});
+    }
+    connection.con.end;
+});
+
 
 //EVENT
 
 //Obtiene el evento dado el eventId
-router.post('/get-event', auth.verifyToken, async function(req, res, next){
+router.post('/get-event', async function(req, res, next){
     try{
         let {eventId} = req.body;
-        const sql = `SELECT  e.eventId, e.type, e.date, e.name, e.description, e.goal, e.profileId, e.status
-                     FROM event AS e 
+        const sql = `SELECT  e.*, u.name AS userName, u.email, u.thumbnail
+                     FROM event AS e
+                     INNER JOIN user AS u ON u.profileId = e.profileId
                      WHERE eventId = ?`;
         connection.con.query(sql, eventId, (err, result, fields) => {
             if (err) {
@@ -283,8 +302,8 @@ router.post('/edit-event', auth.verifyToken, async (req, res, next) => {
     connection.con.end;
 });
 
-//Obtiene el listadol de eventos para el profileId pasado
-router.post('/get-event-list', auth.verifyToken, async function(req, res, next){
+//Obtiene el listado de eventos para el profileId pasado
+router.post('/get-event-list', async function(req, res, next){
     try{
         let {profileId} = req.body;
         const sql = `SELECT  e.*, u.profileId, u.name AS userName, u.email, u.thumbnail
@@ -343,7 +362,7 @@ router.get('/get-event-top', async function(req, res, next){
 //MESSAGES
 
 //Obtiene los mensajes de un evento en particular
-router.post('/get-messages-event', auth.verifyToken, async function(req, res, next) {
+router.post('/get-messages-event', async function(req, res, next) {
     try {
         let { eventId } = req.body;
         const sql = `
@@ -371,7 +390,7 @@ router.post('/get-messages-event', auth.verifyToken, async function(req, res, ne
 });
 
 //Obtiene el total de los mensajes para ese evento
-router.post('/count-messages-event', auth.verifyToken, async function(req, res, next) {
+router.post('/count-messages-event', async function(req, res, next) {
     try {
         let { eventId } = req.body;
         const sql = `
@@ -398,7 +417,7 @@ router.post('/count-messages-event', auth.verifyToken, async function(req, res, 
 });
 
 //Obtiene el total de los regalos para ese evento
-router.post('/count-gifts-event', auth.verifyToken, async function(req, res, next) {
+router.post('/count-gifts-event', async function(req, res, next) {
     try {
         let { eventId } = req.body;
         const sql = `
@@ -428,7 +447,7 @@ router.post('/count-gifts-event', auth.verifyToken, async function(req, res, nex
 //GIFTS
 
 //Obtiene los regalos hechos a un evento
-router.post('/get-gift-event', auth.verifyToken, async function(req, res, next) {
+router.post('/get-gift-event', async function(req, res, next) {
     try {
         let { eventId } = req.body;
         const sql = `
@@ -457,6 +476,8 @@ router.post('/get-gift-event', auth.verifyToken, async function(req, res, next) 
 
 
 //NOTIFICATIONS
+
+//Obtiene las notificaciones de un usuario asociados a un evento activo
 router.post('/get-notifications', auth.verifyToken, async function(req, res, next) {
     try {
         let { profileId } = req.body;

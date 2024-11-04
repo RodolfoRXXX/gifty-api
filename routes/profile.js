@@ -227,19 +227,31 @@ router.post('/search-users', async function(req, res, next){
 //Actualiza los seguidores
 router.post('/update-followers', auth.verifyToken, async (req, res, next) => {
     try {
-        let {profileId, followed} = req.body;
-            sql = `UPDATE user AS u SET u.followed = ? WHERE u.profileId = ?`;
-                connection.con.query(sql, [followed, profileId], (err, result, field) => {
-                    if (err) {
-                        res.send({status: 0, data: err});
-                    } else {
-                        res.send({status: 1, data: result});
-                    }
-                })
+        const { profileId, ownerId, followed, followers } = req.body;
+
+        // Primera consulta de actualización
+        const sql1 = `UPDATE user AS u SET u.followed = ? WHERE u.profileId = ?`;
+        connection.con.query(sql1, [followed, profileId], (err, result1) => {
+            if (err) {
+                res.send({ status: 0, data: 'Error 1' });
+                return;
+            }
+
+            // Segunda consulta de actualización
+            const sql2 = `UPDATE user AS u SET u.followers = ? WHERE u.profileId = ?`;
+            connection.con.query(sql2, [followers, ownerId], (err, result2) => {
+                if (err) {
+                    res.send({ status: 0, data: 'Error 2' });
+                    return;
+                }
+
+                // Ambas consultas exitosas
+                res.send({ status: 1, data: { result1, result2 } });
+            });
+        });
     } catch (error) {
-        res.send({status: 0, data: error});
+        res.send({ status: 0, data: error.message });
     }
-    connection.con.end;
 });
 
 

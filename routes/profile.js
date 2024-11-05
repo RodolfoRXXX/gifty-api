@@ -349,7 +349,7 @@ router.get('/get-event-top', async function(req, res, next){
                         INNER JOIN user AS u ON u.profileId = e.profileId
                     WHERE DATE_SUB(e.finalized, INTERVAL 10 DAY) > NOW()
                         AND e.status = 1 
-                    ORDER BY e.finalized ASC 
+                    ORDER BY e.finalized DESC 
                     LIMIT 10
                     `;
         connection.con.query(sql, (err, result, fields) => {

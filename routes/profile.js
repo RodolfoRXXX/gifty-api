@@ -14,12 +14,15 @@ const jwt     = require('jsonwebtoken');
 const save_image = require('../functions/saveImage');
 const generateNumber = require('../functions/generateNumber');
 
+const mercadopago = require('mercadopago');
+require('dotenv').config();
+
 /* ----------------------- POST --------------------------*/
 
 //Funciones comunes
 
 // Función para generar un eventId único
-const generateUniqueEventId = async () => {
+async function generateUniqueEventId() {
     let newId;
     let exists = true;
     while (exists) {
@@ -27,7 +30,7 @@ const generateUniqueEventId = async () => {
         exists = await checkIfEventIdExists(newId);
     }
     return newId;
-};
+}
 
 // Función para verificar si el eventId existe en la base de datos
 const checkIfEventIdExists = (newId) => {
@@ -517,6 +520,64 @@ router.post('/get-notifications', auth.verifyToken, async function(req, res, nex
     connection.con.end;
 });
 
+
+// PAYMENTS
+
+//Ruta que realiza el pago del cliente desde mercadopago y cobra comisiones
+router.post('/transfer', async (req, res) => {
+    const { amount, payerEmail, receiverEmail } = req.body;
+
+    try {
+
+        mercadopago.configure({
+            access_token: 'APP_USR-3449148006386153-111112-92b44aa40cee1f65afc4f6ae7cde929f-2091998724'
+        });
+        // Configura el porcentaje de comisión para el host
+        const feePercentage = 0.05; // 5% de comisión
+        const feeAmount = amount * feePercentage;
+
+        // Crear preferencia de pago para la transferencia
+        const preference = {
+            items: [
+                {
+                    title: 'Transferencia a través de la plataforma',
+                    unit_price: parseFloat(amount.toFixed(2)),
+                    quantity: 1,
+                },
+            ],
+            payer: {
+                email: payerEmail,
+            },
+            payment_methods: {
+                excluded_payment_types: [{ id: 'ticket' }], // Excluye métodos de pago en efectivo
+                installments: 1,
+            },
+            // Define la comisión de la plataforma
+            marketplace_fee: parseFloat(feeAmount.toFixed(2)),
+            external_reference: receiverEmail,
+            notification_url: 'https://tu-dominio.com/webhook', // URL para recibir notificaciones de pago
+        };
+
+        // Crea la preferencia de pago en MercadoPago
+        const response = await mercadopago.preferences.create(preference);
+        
+        // Devuelve el enlace de pago para iniciar la transferencia
+        res.status(200).json({ init_point: response.body.init_point });
+
+    } catch (error) {
+        console.error('Error al crear la transferencia:', error);
+        res.status(500).json({ error: 'Error al procesar la transferencia' });
+    }
+});
+
+  
+// Ruta para recibir notificaciones IPN
+router.post('/api/notifications', (req, res) => {
+    const paymentInfo = req.body;
+    // Manejar el estado del pago y actualizarlo en la base de datos si es necesario
+    console.log('Notificación de pago recibida:', paymentInfo);
+    res.sendStatus(200);
+});
 
 
 module.exports = router;

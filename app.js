@@ -3,15 +3,14 @@
 const express = require('express');
 const indexRouter = require('./routes/index');
 const port = process.env.PORT || 4000;
-const path = require('path');
 const cors = require('cors');
-const fs = require("fs");
+const morgan = require('morgan');
 const cron = require('node-cron');
+
 const duplicateExpiredAnniversaries = require('./functions/updateEvent');
 
 const http = require('http');
 const hostname = '127.0.0.1';
-//const hostname = 'vps-4353411-x.dattaweb.com';
 
 //inicialización
 const app = express();
@@ -31,6 +30,8 @@ const server = http.createServer(app);
 server.listen(port,hostname, () => {
     console.log(`Servidor corriendo en http://${hostname} y puerto ${port}`);
 });
+
+app.use(morgan('dev'));
 
 app.use('/', indexRouter);
 

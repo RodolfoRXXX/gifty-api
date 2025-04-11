@@ -500,9 +500,32 @@ router.post('/get-notifications', auth.verifyToken, async function(req, res, nex
             SELECT n.* 
             FROM notification AS n
             INNER JOIN event as e ON e.eventId = n.eventId
-            WHERE n.profileId = ? AND e.status = 1
+            WHERE n.profileId = ?
         `;
         connection.con.query(sql, profileId, (err, result, fields) => {
+            if (err) {
+                res.send({status: 0, data: err});
+            } else {
+                if(result.length) {
+                    res.send({status: 1, data: result});
+                } else {
+                    res.send({status: 1, data: ''});
+                }
+            }
+        });
+    } catch (error) {
+        // error de conexión
+        res.send({status: 0, error: error});
+    }
+    connection.con.end;
+});
+
+//Marca la notificación como leída
+router.post('/read-notification', auth.verifyToken, async function(req, res, next) {
+    try {
+        let { id } = req.body;
+        sql = `UPDATE notification AS n SET n.status = 0 WHERE n.id = ?`;
+        connection.con.query(sql, id, (err, result, fields) => {
             if (err) {
                 res.send({status: 0, data: err});
             } else {

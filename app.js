@@ -7,7 +7,8 @@ const cors = require('cors');
 const morgan = require('morgan');
 const cron = require('node-cron');
 
-const duplicateExpiredAnniversaries = require('./functions/updateEvent');
+const duplicateExpiredEvents = require('./functions/updateEvent');
+const deleteExpiredEvents = require('./functions/deleteEvent');
 
 const http = require('http');
 const hostname = '127.0.0.1';
@@ -42,5 +43,6 @@ app.get('/prueba', (req, res) => {
 // Programar la función para que se ejecute todos los días a las 6:00 AM
 cron.schedule('0 6 * * *', () => {
     console.log('Ejecutando tarea diaria de verificación de eventos finalizados a las 6:00 AM');
-    duplicateExpiredAnniversaries();
+    duplicateExpiredEvents();
+    deleteExpiredEvents();
 });

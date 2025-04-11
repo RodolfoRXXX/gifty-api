@@ -27,7 +27,7 @@ const checkIfEventIdExists = (newId) => {
     });
 };
 
-async function duplicateExpiredAnniversaries() {
+async function duplicateExpiredEvents() {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Ignora el tiempo para comparar solo la fecha
@@ -90,8 +90,8 @@ async function duplicateExpiredAnniversaries() {
             });
         });
     } catch (error) {
-        console.error("Error en la tarea de duplicación de aniversarios:", error);
+        console.error("Error en la tarea de duplicación de eventos:", error);
     }
 }
 
-module.exports = duplicateExpiredAnniversaries;
+module.exports = duplicateExpiredEvents;

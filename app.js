@@ -4,6 +4,8 @@ const express = require('express');
 const indexRouter = require('./routes/index');
 const port = process.env.PORT || 4000;
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 const morgan = require('morgan');
 const cron = require('node-cron');
 
@@ -32,10 +34,15 @@ server.listen(port,hostname, () => {
     console.log(`Servidor corriendo en http://${hostname} y puerto ${port}`);
 });
 
-app.use(morgan('dev'));
+// Crear stream para guardar logs(Debug)
+//const logStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' });
+
+// Usar morgan con el stream(Debug)
+//app.use(morgan('combined', { stream: logStream }));
 
 app.use('/', indexRouter);
 
+//Prueba para debug
 app.get('/prueba', (req, res) => {
     res.send('Exito');
 });

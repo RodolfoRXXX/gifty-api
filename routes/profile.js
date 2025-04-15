@@ -152,7 +152,7 @@ router.post('/update-email', auth.verifyToken, async function(req, res, next){
 router.post('/get-profile', async function(req, res, next){
     try{
         let {profileId} = req.body;
-        const sql = `SELECT u.email, u.profileId, u.thumbnail, u.name, u.location, u.followers, u.followed 
+        const sql = `SELECT u.email, u.profileId, u.thumbnail, u.name, u.location, u.followers, u.followed, u.status 
                      FROM user AS u 
                      WHERE u.profileId = ?`;
         connection.con.query(sql, profileId, (err, result, fields) => {
@@ -376,15 +376,15 @@ router.get('/get-event-top', async function(req, res, next){
 
 //MESSAGES
 
-//Obtiene los mensajes de un evento en particular
+//Devuelve los mensajes de un evento en particular
 router.post('/get-messages-event', async function(req, res, next) {
     try {
         let { eventId } = req.body;
         const sql = `
-            SELECT m.*, u.name AS userName, u.email
-            FROM message AS m
-            LEFT JOIN user AS u ON u.profileId = m.profileId
-            WHERE m.eventId = ?
+            SELECT g.gifterId, g.message, u.name AS userName, u.email, g.created
+            FROM gift AS g
+            LEFT JOIN user AS u ON u.profileId = g.gifterId
+            WHERE g.eventId = ? AND g.message != ""
         `;
         connection.con.query(sql, eventId, (err, result, fields) => {
             if (err) {
@@ -404,14 +404,14 @@ router.post('/get-messages-event', async function(req, res, next) {
     connection.con.end;
 });
 
-//Obtiene el total de los mensajes para ese evento
+//Cuenta el total de los mensajes para ese evento
 router.post('/count-messages-event', async function(req, res, next) {
     try {
         let { eventId } = req.body;
         const sql = `
             SELECT COUNT(*) AS total
-            FROM message
-            WHERE eventId = ?
+            FROM gift
+            WHERE eventId = ? AND message != ""
         `;
         connection.con.query(sql, eventId, (err, result, fields) => {
             if (err) {
@@ -468,8 +468,8 @@ router.post('/get-gift-event', async function(req, res, next) {
         const sql = `
             SELECT g.*, u.name AS userName, u.email, u.thumbnail
             FROM gift AS g
-            LEFT JOIN user AS u ON u.profileId = g.profileId
-            WHERE g.eventId = ?
+            LEFT JOIN user AS u ON u.profileId = g.gifterId
+            WHERE g.eventId = ? ORDER BY g.created DESC
         `;
         connection.con.query(sql, eventId, (err, result, fields) => {
             if (err) {
@@ -497,10 +497,12 @@ router.post('/get-notifications', auth.verifyToken, async function(req, res, nex
     try {
         let { profileId } = req.body;
         const sql = `
-            SELECT n.* 
-            FROM notification AS n
-            INNER JOIN event as e ON e.eventId = n.eventId
-            WHERE n.profileId = ?
+            SELECT g.* 
+            FROM gift AS g
+            INNER JOIN event as e ON e.eventId = g.eventId
+            WHERE g.profileId = ?
+            ORDER BY g.created DESC
+            LIMIT 5
         `;
         connection.con.query(sql, profileId, (err, result, fields) => {
             if (err) {
@@ -520,12 +522,12 @@ router.post('/get-notifications', auth.verifyToken, async function(req, res, nex
     connection.con.end;
 });
 
-//Marca la notificación como leída
+//Marca las notificaciones del evento como leídas
 router.post('/read-notification', auth.verifyToken, async function(req, res, next) {
     try {
-        let { id } = req.body;
-        sql = `UPDATE notification AS n SET n.status = 0 WHERE n.id = ?`;
-        connection.con.query(sql, id, (err, result, fields) => {
+        let { eventId } = req.body;
+        sql = `UPDATE gift SET unseen = 0 WHERE eventId = ?`;
+        connection.con.query(sql, eventId, (err, result, fields) => {
             if (err) {
                 res.send({status: 0, data: err});
             } else {
